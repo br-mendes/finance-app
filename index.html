@@ -476,7 +476,7 @@
     <div id="loginOverlay" class="login-overlay active">
         <div class="login-box">
             <h2 style="text-align: center; margin-bottom: 5px;">💰 FinanceApp</h2>
-            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 30px;">v3.0 - Com sincronização na nuvem</p>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 30px;">v3.0</p>
             
             <div id="loginSection">
                 <div class="form-group">
@@ -488,7 +488,10 @@
                     <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
                 </div>
                 <button class="btn btn-primary" onclick="handleLogin()" style="width: 100%; margin-bottom: 10px;">
-                    Entrar / Cadastrar
+                    Entrar
+                </button>
+                <button class="btn btn-secondary" onclick="showRegister()" style="width: 100%; margin-bottom: 10px;">
+                    Criar Nova Conta
                 </button>
                 <button class="btn btn-secondary" onclick="useOfflineMode()" style="width: 100%;">
                     Usar Modo Offline
@@ -1090,7 +1093,11 @@
             try {
                 const { data: { session }, error } = await supabase.auth.getSession();
                 
-                if (error) throw error;
+                if (error) {
+                    console.error('Erro ao obter sessão:', error);
+                    showLoginScreen();
+                    return false;
+                }
                 
                 if (session) {
                     currentUser = session.user;
@@ -1130,33 +1137,20 @@
                 });
                 
                 if (error) {
-                    // Se falhar, tenta cadastrar
-                    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                        email,
-                        password,
-                        options: {
-                            data: {
-                                email: email
-                            }
-                        }
-                    });
-                    
-                    if (signUpError) throw signUpError;
-                    
-                    currentUser = signUpData.user;
-                    showAlert('✅ Conta criada com sucesso! Verifique seu email.', 'success');
-                } else {
-                    currentUser = data.user;
+                    showError('Email ou senha incorretos');
+                    return;
                 }
                 
+                currentUser = data.user;
                 useCloudStorage = true;
                 hideLoginScreen();
                 updateUserInterface();
                 await loadCloudData();
                 startSyncInterval();
+                showAlert('✅ Login realizado com sucesso!', 'success');
                 
             } catch (error) {
-                showError(error.message);
+                showError('Erro ao fazer login: ' + error.message);
             } finally {
                 hideLoading();
             }
@@ -1203,20 +1197,11 @@
                 currentUser = data.user;
                 useCloudStorage = true;
                 
-                // Cria perfil do usuário
-                await supabase
-                    .from('user_profiles')
-                    .upsert({
-                        id: currentUser.id,
-                        email: email,
-                        full_name: name
-                    });
-                
-                showAlert('✅ Conta criada com sucesso! Verifique seu email.', 'success');
+                showAlert('✅ Conta criada com sucesso! Faça login para continuar.', 'success');
                 showLogin();
                 
             } catch (error) {
-                showError(error.message);
+                showError('Erro ao criar conta: ' + error.message);
             } finally {
                 hideLoading();
             }
@@ -1309,13 +1294,19 @@
             if (!useCloudStorage || !currentUser) return;
             
             try {
+                // Primeiro, tenta obter os dados da tabela finance_data
                 const { data, error } = await supabase
                     .from('finance_data')
-                    .select('cards, accounts, transactions, last_sync')
+                    .select('*')
                     .eq('user_id', currentUser.id)
-                    .single();
+                    .maybeSingle();
                 
-                if (error && error.code !== 'PGRST116') throw error;
+                if (error) {
+                    console.error('Erro ao carregar dados da nuvem:', error);
+                    // Cria dados iniciais se não existir
+                    await createInitialUserData();
+                    return;
+                }
                 
                 if (data) {
                     appData.cards = data.cards || [];
@@ -1326,10 +1317,10 @@
                     updateConfigInfo();
                     updateLastSync(data.last_sync);
                     
-                    showAlert('✅ Dados carregados da nuvem', 'success');
+                    console.log('Dados carregados da nuvem:', appData);
                 } else {
                     // Primeiro acesso - cria registro inicial
-                    await saveCloudData();
+                    await createInitialUserData();
                 }
                 
                 // Atualiza UI
@@ -1347,10 +1338,38 @@
             }
         }
         
+        async function createInitialUserData() {
+            try {
+                const initialData = {
+                    user_id: currentUser.id,
+                    cards: [],
+                    accounts: [],
+                    transactions: [],
+                    last_sync: new Date().toISOString()
+                };
+                
+                const { error } = await supabase
+                    .from('finance_data')
+                    .insert(initialData);
+                
+                if (error) throw error;
+                
+                appData.cards = [];
+                appData.accounts = [];
+                appData.transactions = [];
+                
+                showAlert('✅ Dados iniciais criados na nuvem', 'success');
+                
+            } catch (error) {
+                console.error('Erro ao criar dados iniciais:', error);
+                throw error;
+            }
+        }
+        
         async function saveCloudData() {
             if (!useCloudStorage || !currentUser) {
                 saveLocalData();
-                return;
+                return false;
             }
             
             try {
@@ -1361,7 +1380,7 @@
                         cards: appData.cards,
                         accounts: appData.accounts,
                         transactions: appData.transactions,
-                        last_sync: new Date()
+                        last_sync: new Date().toISOString()
                     });
                 
                 if (error) throw error;
