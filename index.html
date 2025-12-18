@@ -476,7 +476,7 @@
     <div id="loginOverlay" class="login-overlay active">
         <div class="login-box">
             <h2 style="text-align: center; margin-bottom: 5px;">💰 FinanceApp</h2>
-            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 30px;">v3.0</p>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 30px;">v3.0 - Com sincronização na nuvem</p>
             
             <div id="loginSection">
                 <div class="form-group">
@@ -488,10 +488,7 @@
                     <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
                 </div>
                 <button class="btn btn-primary" onclick="handleLogin()" style="width: 100%; margin-bottom: 10px;">
-                    Entrar
-                </button>
-                <button class="btn btn-secondary" onclick="showRegister()" style="width: 100%; margin-bottom: 10px;">
-                    Criar Nova Conta
+                    Entrar / Cadastrar
                 </button>
                 <button class="btn btn-secondary" onclick="useOfflineMode()" style="width: 100%;">
                     Usar Modo Offline
@@ -509,7 +506,7 @@
                     <input type="email" id="registerEmail" placeholder="seu@email.com">
                 </div>
                 <div class="form-group">
-                    <label>Senha</label>
+                    <label>Senha (mínimo 6 caracteres)</label>
                     <input type="password" id="registerPassword" placeholder="Mínimo 6 caracteres">
                 </div>
                 <div class="form-group">
@@ -552,11 +549,11 @@
             <div class="app-subtitle">v3.0 Premium</div>
         </div>
         <nav class="sidebar-nav">
-            <div class="nav-item active" onclick="showTab('dashboard')">📊 Dashboard</div>
-            <div class="nav-item" onclick="showTab('cartoes')">💳 Cartões & Contas</div>
-            <div class="nav-item" onclick="showTab('lancamentos')">📝 Lançamentos</div>
-            <div class="nav-item" onclick="showTab('historico')">📊 Histórico</div>
-            <div class="nav-item" onclick="showTab('config')">⚙️ Configurações</div>
+            <div class="nav-item active" onclick="showTab('dashboard', this)">📊 Dashboard</div>
+            <div class="nav-item" onclick="showTab('cartoes', this)">💳 Cartões & Contas</div>
+            <div class="nav-item" onclick="showTab('lancamentos', this)">📝 Lançamentos</div>
+            <div class="nav-item" onclick="showTab('historico', this)">📊 Histórico</div>
+            <div class="nav-item" onclick="showTab('config', this)">⚙️ Configurações</div>
         </nav>
     </aside>
 
@@ -1080,10 +1077,10 @@
         async function initSupabase() {
             try {
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                console.log('Supabase inicializado');
+                console.log('✅ Supabase inicializado');
                 return true;
             } catch (error) {
-                console.error('Erro ao inicializar Supabase:', error);
+                console.error('❌ Erro ao inicializar Supabase:', error);
                 return false;
             }
         }
@@ -1094,9 +1091,8 @@
                 const { data: { session }, error } = await supabase.auth.getSession();
                 
                 if (error) {
-                    console.error('Erro ao obter sessão:', error);
-                    showLoginScreen();
-                    return false;
+                    console.error('Erro na sessão:', error);
+                    throw error;
                 }
                 
                 if (session) {
@@ -1137,20 +1133,46 @@
                 });
                 
                 if (error) {
-                    showError('Email ou senha incorretos');
-                    return;
+                    // Se falhar, tenta cadastrar
+                    if (error.message.includes('Invalid login credentials')) {
+                        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                            email,
+                            password,
+                            options: {
+                                data: { email: email }
+                            }
+                        });
+                        
+                        if (signUpError) throw signUpError;
+                        
+                        currentUser = signUpData.user;
+                        useCloudStorage = true;
+                        
+                        // Cria perfil do usuário
+                        await supabase
+                            .from('user_profiles')
+                            .upsert({
+                                id: currentUser.id,
+                                email: email,
+                                full_name: email.split('@')[0]
+                            });
+                        
+                        showAlert('✅ Conta criada com sucesso! Você já pode usar o app.', 'success');
+                    } else {
+                        throw error;
+                    }
+                } else {
+                    currentUser = data.user;
                 }
                 
-                currentUser = data.user;
                 useCloudStorage = true;
                 hideLoginScreen();
                 updateUserInterface();
                 await loadCloudData();
                 startSyncInterval();
-                showAlert('✅ Login realizado com sucesso!', 'success');
                 
             } catch (error) {
-                showError('Erro ao fazer login: ' + error.message);
+                showError('Erro: ' + error.message);
             } finally {
                 hideLoading();
             }
@@ -1161,7 +1183,6 @@
             const email = document.getElementById('registerEmail').value.trim();
             const password = document.getElementById('registerPassword').value;
             const confirmPassword = document.getElementById('registerConfirmPassword').value;
-            const errorElement = document.getElementById('loginError');
             
             if (!name || !email || !password || !confirmPassword) {
                 showError('Preencha todos os campos');
@@ -1197,11 +1218,20 @@
                 currentUser = data.user;
                 useCloudStorage = true;
                 
-                showAlert('✅ Conta criada com sucesso! Faça login para continuar.', 'success');
+                // Cria perfil do usuário
+                await supabase
+                    .from('user_profiles')
+                    .upsert({
+                        id: currentUser.id,
+                        email: email,
+                        full_name: name
+                    });
+                
+                showAlert('✅ Conta criada com sucesso! Verifique seu email para confirmação.', 'success');
                 showLogin();
                 
             } catch (error) {
-                showError('Erro ao criar conta: ' + error.message);
+                showError(error.message);
             } finally {
                 hideLoading();
             }
@@ -1294,19 +1324,14 @@
             if (!useCloudStorage || !currentUser) return;
             
             try {
-                // Primeiro, tenta obter os dados da tabela finance_data
                 const { data, error } = await supabase
                     .from('finance_data')
-                    .select('*')
+                    .select('cards, accounts, transactions, last_sync')
                     .eq('user_id', currentUser.id)
-                    .maybeSingle();
+                    .single();
                 
-                if (error) {
-                    console.error('Erro ao carregar dados da nuvem:', error);
-                    // Cria dados iniciais se não existir
-                    await createInitialUserData();
-                    return;
-                }
+                // PGRST116 = nenhum dado encontrado
+                if (error && error.code !== 'PGRST116') throw error;
                 
                 if (data) {
                     appData.cards = data.cards || [];
@@ -1317,10 +1342,11 @@
                     updateConfigInfo();
                     updateLastSync(data.last_sync);
                     
-                    console.log('Dados carregados da nuvem:', appData);
+                    console.log('✅ Dados carregados da nuvem');
                 } else {
                     // Primeiro acesso - cria registro inicial
-                    await createInitialUserData();
+                    console.log('📝 Primeiro acesso - criando dados iniciais');
+                    await saveCloudData();
                 }
                 
                 // Atualiza UI
@@ -1334,35 +1360,7 @@
             } catch (error) {
                 console.error('Erro ao carregar dados da nuvem:', error);
                 loadLocalData();
-                showAlert('⚠️ Erro ao carregar da nuvem. Usando dados locais.', 'warning');
-            }
-        }
-        
-        async function createInitialUserData() {
-            try {
-                const initialData = {
-                    user_id: currentUser.id,
-                    cards: [],
-                    accounts: [],
-                    transactions: [],
-                    last_sync: new Date().toISOString()
-                };
-                
-                const { error } = await supabase
-                    .from('finance_data')
-                    .insert(initialData);
-                
-                if (error) throw error;
-                
-                appData.cards = [];
-                appData.accounts = [];
-                appData.transactions = [];
-                
-                showAlert('✅ Dados iniciais criados na nuvem', 'success');
-                
-            } catch (error) {
-                console.error('Erro ao criar dados iniciais:', error);
-                throw error;
+                showAlert('⚠️ Usando dados locais', 'warning');
             }
         }
         
@@ -1381,6 +1379,8 @@
                         accounts: appData.accounts,
                         transactions: appData.transactions,
                         last_sync: new Date().toISOString()
+                    }, {
+                        onConflict: 'user_id'
                     });
                 
                 if (error) throw error;
@@ -1391,6 +1391,7 @@
                 // Atualiza último sync
                 updateLastSync(new Date());
                 
+                console.log('💾 Dados salvos na nuvem');
                 return true;
                 
             } catch (error) {
@@ -1414,25 +1415,32 @@
                     updatePaymentMethods();
                     updateDashboard();
                     updateConfigInfo();
+                    console.log('📂 Dados locais carregados');
                 } catch (e) {
                     console.error('Erro ao carregar dados locais:', e);
+                    appData = { cards: [], accounts: [], transactions: [] };
                 }
+            } else {
+                appData = { cards: [], accounts: [], transactions: [] };
             }
         }
         
         function saveLocalData() {
             localStorage.setItem('financeAppV3', JSON.stringify(appData));
+            console.log('💾 Dados salvos localmente');
         }
         
         // ================= SINCRONIZAÇÃO =================
         function startSyncInterval() {
             if (syncInterval) clearInterval(syncInterval);
             
-            syncInterval = setInterval(async () => {
-                if (useCloudStorage && isOnline && currentUser) {
-                    await saveCloudData();
-                }
-            }, 30000); // Sincroniza a cada 30 segundos
+            if (useCloudStorage && currentUser) {
+                syncInterval = setInterval(async () => {
+                    if (isOnline) {
+                        await saveCloudData();
+                    }
+                }, 30000); // Sincroniza a cada 30 segundos
+            }
         }
         
         function stopSyncInterval() {
@@ -1449,7 +1457,7 @@
             }
             
             try {
-                showLoading('Sincronizando...');
+                showAlert('🔄 Sincronizando...', 'info');
                 const success = await saveCloudData();
                 
                 if (success) {
@@ -1459,8 +1467,6 @@
                 }
             } catch (error) {
                 showAlert('❌ Erro na sincronização', 'danger');
-            } finally {
-                hideLoading();
             }
         }
         
@@ -1473,17 +1479,29 @@
         }
         
         function updateConfigInfo() {
-            document.getElementById('cardsCount').textContent = appData.cards.length;
-            document.getElementById('accountsCount').textContent = appData.accounts.length;
-            document.getElementById('transactionsCount').textContent = appData.transactions.length;
+            if (document.getElementById('cardsCount')) {
+                document.getElementById('cardsCount').textContent = appData.cards.length;
+            }
+            if (document.getElementById('accountsCount')) {
+                document.getElementById('accountsCount').textContent = appData.accounts.length;
+            }
+            if (document.getElementById('transactionsCount')) {
+                document.getElementById('transactionsCount').textContent = appData.transactions.length;
+            }
             
             // Calcula tamanho aproximado dos dados
             const dataSize = JSON.stringify(appData).length;
-            document.getElementById('storageUsed').textContent = formatBytes(dataSize);
+            if (document.getElementById('storageUsed')) {
+                document.getElementById('storageUsed').textContent = formatBytes(dataSize);
+            }
             
             // Atualiza status
-            document.getElementById('syncStatusText').textContent = useCloudStorage ? 'Conectado' : 'Offline';
-            document.getElementById('syncMode').textContent = useCloudStorage ? 'Nuvem' : 'Local';
+            if (document.getElementById('syncStatusText')) {
+                document.getElementById('syncStatusText').textContent = useCloudStorage ? 'Conectado' : 'Offline';
+            }
+            if (document.getElementById('syncMode')) {
+                document.getElementById('syncMode').textContent = useCloudStorage ? 'Nuvem' : 'Local';
+            }
         }
         
         function formatBytes(bytes, decimals = 2) {
@@ -1500,17 +1518,36 @@
         
         function showError(message) {
             const errorElement = document.getElementById('loginError');
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
+            if (errorElement) {
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+            }
         }
         
         function showLoading(message) {
-            // Implementar spinner ou indicador de carregamento
-            console.log('Carregando:', message);
+            // Implementação simples de loading
+            const loading = document.createElement('div');
+            loading.id = 'loadingOverlay';
+            loading.style.position = 'fixed';
+            loading.style.top = '0';
+            loading.style.left = '0';
+            loading.style.width = '100%';
+            loading.style.height = '100%';
+            loading.style.backgroundColor = 'rgba(0,0,0,0.7)';
+            loading.style.display = 'flex';
+            loading.style.justifyContent = 'center';
+            loading.style.alignItems = 'center';
+            loading.style.zIndex = '9999';
+            loading.style.color = 'white';
+            loading.innerHTML = `<div style="text-align: center;"><div style="margin-bottom: 10px;">⏳</div><div>${message}</div></div>`;
+            document.body.appendChild(loading);
         }
         
         function hideLoading() {
-            // Ocultar spinner
+            const loading = document.getElementById('loadingOverlay');
+            if (loading) {
+                loading.remove();
+            }
         }
         
         function showAlert(msg, type) {
@@ -1532,162 +1569,336 @@
         }
         
         // ================= FUNÇÕES DO APP ORIGINAL =================
-        function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
+        function showTab(tabName, element) {
+            // Remove active de todas as tabs
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+            });
             
-            if (tabName === 'dashboard') updateDashboard();
-            if (tabName === 'historico') displayHistory();
-            if (tabName === 'lancamentos') displayRecentTransactions();
+            // Remove active de todos os nav-items
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Adiciona active à tab selecionada
+            const tabElement = document.getElementById(tabName);
+            if (tabElement) {
+                tabElement.classList.add('active');
+            }
+            
+            // Adiciona active ao item clicado
+            if (element) {
+                element.classList.add('active');
+            }
+            
+            // Executa ações específicas para cada tab
+            if (tabName === 'dashboard') {
+                updateDashboard();
+            } else if (tabName === 'historico') {
+                displayHistory();
+            } else if (tabName === 'lancamentos') {
+                displayRecentTransactions();
+            }
         }
         
         function updateDashboard() {
-            const startDate = new Date(document.getElementById('start-date').value || '2020-01-01');
-            const endDate = new Date(document.getElementById('end-date').value || new Date());
+            // Configura datas padrão se não definidas
+            const startDateInput = document.getElementById('start-date');
+            const endDateInput = document.getElementById('end-date');
+            
+            if (!startDateInput.value) {
+                const firstDay = new Date();
+                firstDay.setDate(1);
+                startDateInput.value = firstDay.toISOString().split('T')[0];
+            }
+            
+            if (!endDateInput.value) {
+                endDateInput.value = new Date().toISOString().split('T')[0];
+            }
+            
+            const startDate = new Date(startDateInput.value);
+            const endDate = new Date(endDateInput.value);
             
             let debit = 0, credit = 0, parcel = 0;
             let paymentData = {}, categoryData = {};
             
+            // Calcula valores por período
             appData.transactions.forEach(t => {
+                if (!t.data) return;
+                
                 const tDate = new Date(t.data);
                 if (tDate < startDate || tDate > endDate) return;
                 
                 if (t.tipo === 'debito') {
-                    debit += t.valor;
-                    categoryData[t.categoria] = (categoryData[t.categoria] || 0) + t.valor;
+                    debit += t.valor || 0;
+                    categoryData[t.categoria] = (categoryData[t.categoria] || 0) + (t.valor || 0);
                 } else if (t.tipo === 'credito') {
-                    credit += t.valor;
-                    categoryData[t.categoria] = (categoryData[t.categoria] || 0) + t.valor;
+                    credit += t.valor || 0;
+                    categoryData[t.categoria] = (categoryData[t.categoria] || 0) + (t.valor || 0);
                 } else if (t.tipo === 'conta') {
-                    if (t.numero_parcelas > t.parcela_atual) parcel += t.valor;
-                    categoryData[t.categoria] = (categoryData[t.categoria] || 0) + t.valor;
+                    if ((t.numero_parcelas || 1) > (t.parcela_atual || 1)) {
+                        parcel += t.valor || 0;
+                    }
+                    categoryData[t.categoria] = (categoryData[t.categoria] || 0) + (t.valor || 0);
                 }
             });
             
-            let totalLimit = appData.cards.reduce((sum, c) => sum + c.limite_total, 0);
-            let limitUsed = appData.transactions.filter(t => t.tipo === 'conta' && new Date(t.data) <= endDate)
-                .reduce((sum, t) => sum + (t.numero_parcelas >= t.parcela_atual ? t.valor : 0), 0);
-            let availableLimit = totalLimit - limitUsed;
+            // Calcula limite disponível
+            let totalLimit = appData.cards.reduce((sum, c) => sum + (c.limite_total || 0), 0);
+            let limitUsed = appData.transactions
+                .filter(t => t.tipo === 'conta')
+                .reduce((sum, t) => sum + (t.valor || 0), 0);
+            let availableLimit = Math.max(0, totalLimit - limitUsed);
             
+            // Calcula saldo das contas
             let accountBalance = appData.accounts.reduce((sum, acc) => {
-                let balance = acc.saldo_inicial;
-                appData.transactions.filter(t => t.id_conta === acc.id && new Date(t.data) <= endDate).forEach(t => {
-                    if (t.tipo === 'debito') balance -= t.valor;
-                    if (t.tipo === 'conta') balance -= t.valor;
-                    if (t.tipo === 'provento') balance += t.valor;
-                    if (t.tipo === 'ajuste') balance += t.valor;
-                });
+                let balance = acc.saldo_inicial || 0;
+                
+                appData.transactions
+                    .filter(t => t.id_conta === acc.id)
+                    .forEach(t => {
+                        if (t.tipo === 'debito' || t.tipo === 'conta') {
+                            balance -= t.valor || 0;
+                        }
+                        if (t.tipo === 'provento' || t.tipo === 'ajuste') {
+                            balance += t.valor || 0;
+                        }
+                    });
+                
                 return sum + balance;
             }, 0);
             
-            // FORMATANDO VALORES NO PADRÃO BRASILEIRO
+            // Atualiza valores na interface
             document.getElementById('debit-value').textContent = `R$ ${formatarMoeda(debit)}`;
             document.getElementById('credit-value').textContent = `R$ ${formatarMoeda(credit)}`;
             document.getElementById('parcel-value').textContent = `R$ ${formatarMoeda(parcel)}`;
             document.getElementById('limit-value').textContent = `R$ ${formatarMoeda(availableLimit)}`;
             document.getElementById('balance-value').textContent = `R$ ${formatarMoeda(accountBalance)}`;
             
+            // Cria gráficos
             createCharts(paymentData, categoryData);
             generateInsights(debit, credit, parcel, totalLimit);
         }
         
         function createCharts(paymentData, categoryData) {
-            const paymentCtx = document.getElementById('paymentChart').getContext('2d');
-            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
-            
-            if (charts.payment) charts.payment.destroy();
-            charts.payment = new Chart(paymentCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Débito', 'Crédito À Vista', 'Crédito Parcelado'],
-                    datasets: [{
-                        data: [
-                            appData.transactions.filter(t => t.tipo === 'debito').reduce((s, t) => s + t.valor, 0),
-                            appData.transactions.filter(t => t.tipo === 'credito').reduce((s, t) => s + t.valor, 0),
-                            appData.transactions.filter(t => t.tipo === 'conta').reduce((s, t) => s + t.valor, 0)
-                        ],
-                        backgroundColor: ['#e31f1f', '#49ac2a', '#ffafd2']
-                    }]
+            // Gráfico de métodos de pagamento
+            const paymentCtx = document.getElementById('paymentChart');
+            if (paymentCtx) {
+                if (charts.payment) {
+                    charts.payment.destroy();
                 }
-            });
+                
+                const paymentDataValues = [
+                    appData.transactions.filter(t => t.tipo === 'debito').reduce((s, t) => s + (t.valor || 0), 0),
+                    appData.transactions.filter(t => t.tipo === 'credito').reduce((s, t) => s + (t.valor || 0), 0),
+                    appData.transactions.filter(t => t.tipo === 'conta').reduce((s, t) => s + (t.valor || 0), 0)
+                ];
+                
+                charts.payment = new Chart(paymentCtx.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Débito', 'Crédito À Vista', 'Crédito Parcelado'],
+                        datasets: [{
+                            data: paymentDataValues,
+                            backgroundColor: ['#e31f1f', '#49ac2a', '#ffafd2'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
             
-            if (charts.category) charts.category.destroy();
-            const sortedCats = Object.entries(categoryData).sort((a, b) => b[1] - a[1]).slice(0, 8);
-            charts.category = new Chart(categoryCtx, {
-                type: 'bar',
-                data: {
-                    labels: sortedCats.map(c => c[0]),
-                    datasets: [{
-                        label: 'Valor (R$)',
-                        data: sortedCats.map(c => c[1]),
-                        backgroundColor: '#49ac2a'
-                    }]
-                },
-                options: { indexAxis: 'y', responsive: true }
-            });
+            // Gráfico de categorias
+            const categoryCtx = document.getElementById('categoryChart');
+            if (categoryCtx) {
+                if (charts.category) {
+                    charts.category.destroy();
+                }
+                
+                const sortedCats = Object.entries(categoryData)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 8);
+                
+                if (sortedCats.length > 0) {
+                    charts.category = new Chart(categoryCtx.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: sortedCats.map(c => c[0]),
+                            datasets: [{
+                                label: 'Valor (R$)',
+                                data: sortedCats.map(c => c[1]),
+                                backgroundColor: '#49ac2a',
+                                borderColor: '#3a8a1a',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            }
+                        }
+                    });
+                }
+            }
         }
         
         function generateInsights(debit, credit, parcel, totalLimit) {
             let total = debit + credit + parcel;
-            let fixedPercent = (appData.transactions.filter(t => t.fixo).reduce((s, t) => s + t.valor, 0) / (total || 1)) * 100;
-            let insights = `<div class="insight-box">
+            let fixedExpenses = appData.transactions
+                .filter(t => t.fixo === true)
+                .reduce((sum, t) => sum + (t.valor || 0), 0);
+            
+            let fixedPercent = total > 0 ? (fixedExpenses / total) * 100 : 0;
+            
+            let insightsHtml = `<div class="insight-box">
                 <strong>📊 Análise Financeira</strong><br>
                 Gastos Fixos: ${fixedPercent.toFixed(0)}% do total
                 <div class="progress-bar">
                     <div class="progress-fill" style="width: ${Math.min(fixedPercent, 100)}%"></div>
-                </div>
-                ${fixedPercent > 50 ? '<p style="color: var(--color-red);">⚠️ Gastos fixos altos! Revise suas despesas recorrentes.</p>' : ''}
-            </div>`;
-            document.getElementById('insights').innerHTML = insights;
+                </div>`;
+            
+            if (fixedPercent > 50) {
+                insightsHtml += '<p style="color: var(--color-red);">⚠️ Gastos fixos altos! Revise suas despesas recorrentes.</p>';
+            }
+            
+            if (totalLimit > 0) {
+                const usedPercent = ((totalLimit - (totalLimit - limitUsed)) / totalLimit) * 100;
+                if (usedPercent > 80) {
+                    insightsHtml += '<p style="color: var(--color-red);">⚠️ Limite do cartão quase esgotado!</p>';
+                }
+            }
+            
+            insightsHtml += '</div>';
+            
+            const insightsElement = document.getElementById('insights');
+            if (insightsElement) {
+                insightsElement.innerHTML = insightsHtml;
+            }
         }
         
         function displayRecentTransactions() {
-            const recent = appData.transactions.slice(-5).reverse();
-            let html = '<h3 style="margin-bottom: 20px;">📋 Últimas Transações</h3><ul style="list-style: none;">';
-            recent.forEach(t => {
-                const color = t.tipo === 'debito' ? 'var(--color-red)' : t.tipo === 'conta' ? 'var(--color-orange)' : 'var(--color-green)';
-                const icon = t.tipo === 'debito' ? '💸' : t.tipo === 'conta' ? '💳' : '💰';
-                html += `<li style="padding: 10px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between;">
-                    <div><strong>${icon} ${t.descricao}</strong><br><small style="color: var(--text-secondary);">${formatarData(t.data)}</small></div>
-                    <strong style="color: ${color};">R$ ${formatarMoeda(t.valor)}</strong>
-                </li>`;
-            });
-            html += '</ul>';
-            document.getElementById('recent-transactions').innerHTML = html;
+            const recent = appData.transactions
+                .slice(-10)
+                .reverse()
+                .filter(t => t && t.descricao);
+            
+            let html = '<h3 style="margin-bottom: 20px;">📋 Últimas Transações</h3>';
+            
+            if (recent.length === 0) {
+                html += '<p style="color: var(--text-secondary); text-align: center;">Nenhuma transação recente</p>';
+            } else {
+                html += '<ul style="list-style: none; padding: 0;">';
+                recent.forEach(t => {
+                    const color = t.tipo === 'debito' ? 'var(--color-red)' : 
+                                 t.tipo === 'conta' ? 'var(--color-orange)' : 'var(--color-green)';
+                    const icon = t.tipo === 'debito' ? '💸' : 
+                                 t.tipo === 'conta' ? '💳' : '💰';
+                    
+                    html += `<li style="padding: 10px 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>${icon} ${t.descricao || 'Sem descrição'}</strong><br>
+                            <small style="color: var(--text-secondary);">${formatarData(t.data)}</small>
+                        </div>
+                        <strong style="color: ${color};">R$ ${formatarMoeda(t.valor || 0)}</strong>
+                    </li>`;
+                });
+                html += '</ul>';
+            }
+            
+            const container = document.getElementById('recent-transactions');
+            if (container) {
+                container.innerHTML = html;
+            }
         }
         
         function displayHistory() {
+            const query = document.getElementById('search-trans')?.value.toLowerCase() || '';
+            const filtered = appData.transactions
+                .filter(t => t && t.descricao && t.descricao.toLowerCase().includes(query))
+                .reverse();
+            
             let html = '';
-            const query = document.getElementById('search-trans').value.toLowerCase();
-            const filtered = appData.transactions.filter(t => t.descricao.toLowerCase().includes(query)).reverse();
             
             if (filtered.length === 0) {
-                html += '<td colspan="6" style="text-align: center; padding: 20px;">Nenhuma transação encontrada</td>';
+                html = `<tr>
+                    <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                        ${query ? 'Nenhuma transação encontrada' : 'Nenhuma transação registrada'}
+                    </td>
+                </tr>`;
             } else {
                 filtered.forEach(t => {
-                    const badge = t.tipo === 'debito' ? 'badge-danger' : t.tipo === 'conta' ? 'badge-warning' : 'badge-success';
+                    const badgeType = t.tipo === 'debito' ? 'badge-danger' : 
+                                     t.tipo === 'conta' ? 'badge-warning' : 'badge-success';
+                    const tipoText = t.tipo === 'debito' ? 'Débito' : 
+                                    t.tipo === 'conta' ? 'Crédito' : 'Receita';
+                    
                     html += `<tr>
                         <td>${formatarData(t.data)}</td>
-                        <td><span class="badge ${badge}">${t.tipo}</span></td>
-                        <td>${t.descricao}</td>
-                        <td>${t.categoria}</td>
-                        <td>R$ ${formatarMoeda(t.valor)}</td>
-                        <td><button class="btn btn-danger action-btn" onclick="deleteTransaction(${t.id})">🗑️</button></td>
+                        <td><span class="badge ${badgeType}">${tipoText}</span></td>
+                        <td>${t.descricao || ''}</td>
+                        <td>${t.categoria || ''}</td>
+                        <td>R$ ${formatarMoeda(t.valor || 0)}</td>
+                        <td>
+                            <button class="btn btn-danger action-btn" onclick="deleteTransaction(${t.id})" title="Excluir">
+                                🗑️
+                            </button>
+                        </td>
                     </tr>`;
                 });
             }
-            document.getElementById('history-table-body').innerHTML = html;
+            
+            const tbody = document.getElementById('history-table-body');
+            if (tbody) {
+                tbody.innerHTML = html;
+            }
         }
         
         function updatePaymentMethods() {
-            document.getElementById('debit-account').innerHTML = appData.accounts.map(a => `<option value="${a.id}">${a.instituicao}</option>`).join('');
-            document.getElementById('credit-card').innerHTML = appData.cards.map(c => `<option value="${c.id}">${c.instituicao} (${c.ultimos4})</option>`).join('');
-            document.getElementById('bill-account').innerHTML = appData.accounts.map(a => `<option value="${a.id}">${a.instituicao}</option>`).join('');
-            document.getElementById('income-account').innerHTML = appData.accounts.map(a => `<option value="${a.id}">${a.instituicao}</option>`).join('');
+            // Atualiza select de contas para débito
+            const debitAccountSelect = document.getElementById('debit-account');
+            if (debitAccountSelect) {
+                debitAccountSelect.innerHTML = appData.accounts
+                    .map(a => `<option value="${a.id}">${a.instituicao || 'Conta'} (R$ ${formatarMoeda(a.saldo_inicial || 0)})</option>`)
+                    .join('');
+            }
+            
+            // Atualiza select de cartões para crédito
+            const creditCardSelect = document.getElementById('credit-card');
+            if (creditCardSelect) {
+                creditCardSelect.innerHTML = appData.cards
+                    .map(c => `<option value="${c.id}">${c.instituicao || 'Cartão'} (${c.ultimos4 || '****'})</option>`)
+                    .join('');
+            }
+            
+            // Atualiza select de contas para contas recorrentes
+            const billAccountSelect = document.getElementById('bill-account');
+            if (billAccountSelect) {
+                billAccountSelect.innerHTML = appData.accounts
+                    .map(a => `<option value="${a.id}">${a.instituicao || 'Conta'}</option>`)
+                    .join('');
+            }
+            
+            // Atualiza select de contas para receitas
+            const incomeAccountSelect = document.getElementById('income-account');
+            if (incomeAccountSelect) {
+                incomeAccountSelect.innerHTML = appData.accounts
+                    .map(a => `<option value="${a.id}">${a.instituicao || 'Conta'}</option>`)
+                    .join('');
+            }
         }
         
+        // ================= FUNÇÕES PARA ABRIR MODAIS =================
         function openCardModal() { 
             document.getElementById('cardModal').classList.add('show');
             document.getElementById('card-last4').focus();
@@ -1699,21 +1910,25 @@
         }
         
         function openDebitModal() { 
+            updatePaymentMethods();
             document.getElementById('debitModal').classList.add('show');
             document.getElementById('debit-desc').focus();
         }
         
         function openCreditModal() { 
+            updatePaymentMethods();
             document.getElementById('creditModal').classList.add('show');
             document.getElementById('credit-desc').focus();
         }
         
         function openBillModal() { 
+            updatePaymentMethods();
             document.getElementById('billModal').classList.add('show');
             document.getElementById('bill-desc').focus();
         }
         
         function openIncomeModal() { 
+            updatePaymentMethods();
             document.getElementById('incomeModal').classList.add('show');
             document.getElementById('income-desc').focus();
         }
@@ -1730,17 +1945,21 @@
                     dia_vencimento: parseInt(document.getElementById('card-due-day').value)
                 };
                 
+                if (!card.ultimos4 || !card.instituicao || card.limite_total <= 0) {
+                    throw new Error('Preencha todos os campos corretamente');
+                }
+                
                 appData.cards.push(card);
                 await saveCloudData();
                 displayCards();
                 updatePaymentMethods();
-                document.getElementById('cardForm').reset();
                 
+                document.getElementById('cardForm').reset();
                 document.getElementById('cardModal').classList.remove('show');
-                showAlert('✅ Cartão salvo!', 'success');
+                showAlert('✅ Cartão salvo com sucesso!', 'success');
                 
             } catch (error) {
-                showAlert('❌ Erro ao salvar cartão', 'danger');
+                showAlert('❌ Erro ao salvar cartão: ' + error.message, 'danger');
             }
         }
         
@@ -1753,17 +1972,21 @@
                     data_saldo_inicial: document.getElementById('account-date').value
                 };
                 
+                if (!account.instituicao || account.saldo_inicial < 0) {
+                    throw new Error('Preencha todos os campos corretamente');
+                }
+                
                 appData.accounts.push(account);
                 await saveCloudData();
                 displayAccounts();
                 updatePaymentMethods();
-                document.getElementById('accountForm').reset();
                 
+                document.getElementById('accountForm').reset();
                 document.getElementById('accountModal').classList.remove('show');
-                showAlert('✅ Conta bancária salva!', 'success');
+                showAlert('✅ Conta bancária salva com sucesso!', 'success');
                 
             } catch (error) {
-                showAlert('❌ Erro ao salvar conta', 'danger');
+                showAlert('❌ Erro ao salvar conta: ' + error.message, 'danger');
             }
         }
         
@@ -1783,43 +2006,41 @@
                     fixo: false
                 };
                 
+                if (!trans.descricao || trans.valor <= 0 || !trans.data) {
+                    throw new Error('Preencha todos os campos obrigatórios');
+                }
+                
                 appData.transactions.push(trans);
                 await saveCloudData();
                 displayHistory();
                 displayRecentTransactions();
                 updateDashboard();
-                document.getElementById('debitForm').reset();
                 
+                document.getElementById('debitForm').reset();
                 document.getElementById('debitModal').classList.remove('show');
-                showAlert('✅ Débito registrado!', 'success');
+                showAlert('✅ Débito registrado com sucesso!', 'success');
                 
             } catch (error) {
-                showAlert('❌ Erro ao registrar débito', 'danger');
+                showAlert('❌ Erro ao registrar débito: ' + error.message, 'danger');
             }
         }
         
         async function saveCredit() {
             try {
                 const value = parseMoeda(document.getElementById('credit-value').value);
-                const parcels = parseInt(document.getElementById('credit-parcels').value);
+                const parcels = parseInt(document.getElementById('credit-parcels').value) || 1;
                 const date = new Date(document.getElementById('credit-date').value);
                 const cardId = parseInt(document.getElementById('credit-card').value);
-                const card = appData.cards.find(c => c.id == cardId);
+                
+                if (!document.getElementById('credit-desc').value || value <= 0 || parcels < 1) {
+                    throw new Error('Preencha todos os campos obrigatórios');
+                }
+                
                 const parcelValue = value / parcels;
                 
                 for (let i = 0; i < parcels; i++) {
                     const parcelDate = new Date(date);
                     parcelDate.setMonth(parcelDate.getMonth() + i);
-                    
-                    // Calcular vencimento da fatura
-                    let dueDate = new Date(parcelDate);
-                    if (card && card.dia_vencimento) {
-                        dueDate.setDate(parseInt(card.dia_vencimento));
-                        // Se a data de vencimento já passou, ir para o próximo mês
-                        if (dueDate < parcelDate) {
-                            dueDate.setMonth(dueDate.getMonth() + 1);
-                        }
-                    }
                     
                     const trans = {
                         id: Date.now() + i,
@@ -1832,7 +2053,6 @@
                         categoria: document.getElementById('credit-category').value,
                         numero_parcelas: parcels,
                         parcela_atual: i + 1,
-                        data_vencimento_fatura: dueDate.toISOString().split('T')[0],
                         fixo: false
                     };
                     appData.transactions.push(trans);
@@ -1840,22 +2060,28 @@
                 
                 await saveCloudData();
                 displayHistory();
+                displayRecentTransactions();
                 updateDashboard();
-                document.getElementById('creditForm').reset();
                 
+                document.getElementById('creditForm').reset();
                 document.getElementById('creditModal').classList.remove('show');
-                showAlert(`✅ Compra parcelada em ${parcels}x registrada!`, 'success');
+                showAlert(`✅ Compra parcelada em ${parcels}x registrada com sucesso!`, 'success');
                 
             } catch (error) {
-                showAlert('❌ Erro ao registrar compra', 'danger');
+                showAlert('❌ Erro ao registrar compra: ' + error.message, 'danger');
             }
         }
         
         async function saveBill() {
             try {
                 const isFixed = document.getElementById('bill-fixed').checked;
-                const months = isFixed ? parseInt(document.getElementById('bill-months').value) : 1;
+                const months = isFixed ? parseInt(document.getElementById('bill-months').value) || 12 : 1;
                 const date = new Date(document.getElementById('bill-date').value);
+                const value = parseMoeda(document.getElementById('bill-value').value);
+                
+                if (!document.getElementById('bill-desc').value || value <= 0 || !date) {
+                    throw new Error('Preencha todos os campos obrigatórios');
+                }
                 
                 for (let i = 0; i < months; i++) {
                     const billDate = new Date(date);
@@ -1866,7 +2092,7 @@
                         tipo: 'debito',
                         descricao: document.getElementById('bill-desc').value,
                         data: billDate.toISOString().split('T')[0],
-                        valor: parseMoeda(document.getElementById('bill-value').value),
+                        valor: value,
                         id_conta: parseInt(document.getElementById('bill-account').value),
                         categoria: document.getElementById('bill-category').value,
                         numero_parcelas: 1,
@@ -1880,16 +2106,18 @@
                 
                 await saveCloudData();
                 displayHistory();
+                displayRecentTransactions();
                 updateDashboard();
+                
                 document.getElementById('billForm').reset();
                 document.getElementById('bill-fixed').checked = false;
                 document.getElementById('bill-recurrence').style.display = 'none';
-                
                 document.getElementById('billModal').classList.remove('show');
-                showAlert(`✅ Pagamento recorrente registrado por ${months} mês(es)!`, 'success');
+                
+                showAlert(`✅ Pagamento recorrente registrado para ${months} mês(es)!`, 'success');
                 
             } catch (error) {
-                showAlert('❌ Erro ao registrar pagamento', 'danger');
+                showAlert('❌ Erro ao registrar pagamento: ' + error.message, 'danger');
             }
         }
         
@@ -1909,51 +2137,22 @@
                     fixo: false
                 };
                 
+                if (!trans.descricao || trans.valor <= 0 || !trans.data) {
+                    throw new Error('Preencha todos os campos obrigatórios');
+                }
+                
                 appData.transactions.push(trans);
                 await saveCloudData();
                 displayHistory();
+                displayRecentTransactions();
                 updateDashboard();
-                document.getElementById('incomeForm').reset();
                 
+                document.getElementById('incomeForm').reset();
                 document.getElementById('incomeModal').classList.remove('show');
-                showAlert('✅ Receita registrada!', 'success');
+                showAlert('✅ Receita registrada com sucesso!', 'success');
                 
             } catch (error) {
-                showAlert('❌ Erro ao registrar receita', 'danger');
-            }
-        }
-        
-        // ================= FUNÇÕES DE EXCLUSÃO =================
-        async function deleteTransaction(id) {
-            if (confirm('Tem certeza que deseja remover esta transação?')) {
-                appData.transactions = appData.transactions.filter(t => t.id !== id);
-                await saveCloudData();
-                displayHistory();
-                updateDashboard();
-                showAlert('✅ Transação removida!', 'success');
-            }
-        }
-        
-        async function deleteCard(id) {
-            if (confirm('Tem certeza que deseja remover este cartão? As transações associadas também serão removidas.')) {
-                appData.cards = appData.cards.filter(c => c.id !== id);
-                appData.transactions = appData.transactions.filter(t => t.id_cartao !== id);
-                await saveCloudData();
-                displayCards();
-                updateDashboard();
-                showAlert('✅ Cartão removido!', 'success');
-            }
-        }
-        
-        async function deleteAccount(id) {
-            if (confirm('Tem certeza que deseja remover esta conta? As transações associadas também serão removidas.')) {
-                appData.accounts = appData.accounts.filter(a => a.id !== id);
-                appData.transactions = appData.transactions.filter(t => t.id_conta !== id);
-                await saveCloudData();
-                displayAccounts();
-                updatePaymentMethods();
-                updateDashboard();
-                showAlert('✅ Conta removida!', 'success');
+                showAlert('❌ Erro ao registrar receita: ' + error.message, 'danger');
             }
         }
         
@@ -1961,41 +2160,106 @@
         function displayCards() {
             let html = '';
             appData.cards.forEach(c => {
-                const used = appData.transactions.filter(t => t.id_cartao === c.id && t.numero_parcelas >= t.parcela_atual).reduce((s, t) => s + t.valor, 0);
+                const used = appData.transactions
+                    .filter(t => t.id_cartao === c.id && (t.numero_parcelas || 1) >= (t.parcela_atual || 1))
+                    .reduce((s, t) => s + (t.valor || 0), 0);
+                
+                const usedPercent = c.limite_total > 0 ? (used / c.limite_total) * 100 : 0;
+                
                 html += `<tr>
-                    <td>${c.ultimos4}</td>
-                    <td>${c.instituicao}</td>
-                    <td>R$ ${formatarMoeda(c.limite_total)}</td>
-                    <td>R$ ${formatarMoeda(used)}</td>
-                    <td>Dia ${c.dia_vencimento}</td>
+                    <td>${c.ultimos4 || '****'}</td>
+                    <td>${c.instituicao || ''}</td>
+                    <td>R$ ${formatarMoeda(c.limite_total || 0)}</td>
                     <td>
-                        <button class="btn btn-danger action-btn" onclick="deleteCard(${c.id})">🗑️</button>
+                        R$ ${formatarMoeda(used)}
+                        <div class="progress-bar" style="height: 8px; margin: 5px 0;">
+                            <div class="progress-fill" style="width: ${usedPercent}%; background-color: ${usedPercent > 80 ? 'var(--color-red)' : usedPercent > 50 ? 'var(--color-orange)' : 'var(--color-green)'};"></div>
+                        </div>
+                    </td>
+                    <td>Dia ${c.dia_vencimento || 1}</td>
+                    <td>
+                        <button class="btn btn-danger action-btn" onclick="deleteCard(${c.id})" title="Excluir">
+                            🗑️
+                        </button>
                     </td>
                 </tr>`;
             });
-            document.getElementById('cards-table-body').innerHTML = html;
+            
+            const tbody = document.getElementById('cards-table-body');
+            if (tbody) {
+                tbody.innerHTML = html || '<tr><td colspan="6" style="text-align: center; padding: 20px;">Nenhum cartão cadastrado</td></tr>';
+            }
         }
         
         function displayAccounts() {
             let html = '';
             appData.accounts.forEach(a => {
-                let balance = a.saldo_inicial;
-                appData.transactions.filter(t => t.id_conta === a.id).forEach(t => {
-                    if (t.tipo === 'debito' || t.tipo === 'conta') balance -= t.valor;
-                    if (t.tipo === 'provento') balance += t.valor;
-                    if (t.tipo === 'ajuste') balance += t.valor;
-                });
+                let balance = a.saldo_inicial || 0;
+                
+                appData.transactions
+                    .filter(t => t.id_conta === a.id)
+                    .forEach(t => {
+                        if (t.tipo === 'debito' || t.tipo === 'conta') {
+                            balance -= t.valor || 0;
+                        }
+                        if (t.tipo === 'provento' || t.tipo === 'ajuste') {
+                            balance += t.valor || 0;
+                        }
+                    });
+                
                 html += `<tr>
-                    <td>${a.instituicao}</td>
-                    <td>R$ ${formatarMoeda(a.saldo_inicial)}</td>
+                    <td>${a.instituicao || ''}</td>
+                    <td>R$ ${formatarMoeda(a.saldo_inicial || 0)}</td>
                     <td>R$ ${formatarMoeda(balance)}</td>
                     <td>${formatarData(a.data_saldo_inicial)}</td>
                     <td>
-                        <button class="btn btn-danger action-btn" onclick="deleteAccount(${a.id})">🗑️</button>
+                        <button class="btn btn-danger action-btn" onclick="deleteAccount(${a.id})" title="Excluir">
+                            🗑️
+                        </button>
                     </td>
                 </tr>`;
             });
-            document.getElementById('accounts-table-body').innerHTML = html;
+            
+            const tbody = document.getElementById('accounts-table-body');
+            if (tbody) {
+                tbody.innerHTML = html || '<tr><td colspan="5" style="text-align: center; padding: 20px;">Nenhuma conta cadastrada</td></tr>';
+            }
+        }
+        
+        // ================= FUNÇÕES DE EXCLUSÃO =================
+        async function deleteTransaction(id) {
+            if (!confirm('Tem certeza que deseja remover esta transação?')) return;
+            
+            appData.transactions = appData.transactions.filter(t => t.id !== id);
+            await saveCloudData();
+            displayHistory();
+            displayRecentTransactions();
+            updateDashboard();
+            showAlert('✅ Transação removida com sucesso!', 'success');
+        }
+        
+        async function deleteCard(id) {
+            if (!confirm('Tem certeza que deseja remover este cartão? As transações associadas também serão removidas.')) return;
+            
+            appData.cards = appData.cards.filter(c => c.id !== id);
+            appData.transactions = appData.transactions.filter(t => t.id_cartao !== id);
+            await saveCloudData();
+            displayCards();
+            updatePaymentMethods();
+            updateDashboard();
+            showAlert('✅ Cartão removido com sucesso!', 'success');
+        }
+        
+        async function deleteAccount(id) {
+            if (!confirm('Tem certeza que deseja remover esta conta? As transações associadas também serão removidas.')) return;
+            
+            appData.accounts = appData.accounts.filter(a => a.id !== id);
+            appData.transactions = appData.transactions.filter(t => t.id_conta !== id);
+            await saveCloudData();
+            displayAccounts();
+            updatePaymentMethods();
+            updateDashboard();
+            showAlert('✅ Conta removida com sucesso!', 'success');
         }
         
         // ================= FUNÇÕES DE CSV =================
@@ -2020,7 +2284,15 @@
             
             let csv = headers.join(';') + '\n';
             data.forEach(row => {
-                csv += headers.map(h => row[h] || '').join(';') + '\n';
+                const rowData = headers.map(h => {
+                    const value = row[h];
+                    if (value === null || value === undefined) return '';
+                    if (typeof value === 'string' && (value.includes(';') || value.includes('"'))) {
+                        return '"' + value.replace(/"/g, '""') + '"';
+                    }
+                    return value;
+                });
+                csv += rowData.join(';') + '\n';
             });
             
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -2028,9 +2300,12 @@
             const a = document.createElement('a');
             a.href = url;
             a.download = filename;
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showAlert(`✅ ${type} exportado com sucesso!`, 'success');
+            
+            showAlert(`✅ ${filename} exportado com sucesso!`, 'success');
         }
         
         function importCSV() {
@@ -2043,119 +2318,116 @@
             }
             
             const statusDiv = document.getElementById('import-status');
-            statusDiv.innerHTML = `⏳ Processando ${files.length} arquivo(s)...`;
+            statusDiv.innerHTML = `<div style="color: var(--color-orange);">⏳ Processando ${files.length} arquivo(s)...</div>`;
             
             let processed = 0;
             let totalRecords = 0;
             const results = {};
             
             Array.from(files).forEach(file => {
-                readCSV(file, (recordCount) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const csv = e.target.result;
+                        const lines = csv.split('\n');
+                        if (lines.length < 2) {
+                            results[file.name] = 0;
+                            processed++;
+                            return;
+                        }
+                        
+                        // Detecta separador
+                        const firstLine = lines[0];
+                        const isSemicolon = firstLine.includes(';');
+                        const separator = isSemicolon ? ';' : ',';
+                        
+                        const headers = lines[0].split(separator).map(h => h.trim().replace(/^"|"$/g, ''));
+                        
+                        // Detecta tipo de arquivo pelo nome ou headers
+                        let type = '';
+                        if (file.name.includes('cartoes') || headers.includes('ultimos4')) {
+                            type = 'cartoes';
+                        } else if (file.name.includes('contas') || headers.includes('saldo_inicial')) {
+                            type = 'contas';
+                        } else if (file.name.includes('transacoes') || headers.includes('tipo')) {
+                            type = 'transacoes';
+                        }
+                        
+                        let recordCount = 0;
+                        
+                        for (let i = 1; i < lines.length; i++) {
+                            if (!lines[i].trim()) continue;
+                            
+                            const values = lines[i].split(separator).map(v => v.trim().replace(/^"|"$/g, ''));
+                            const obj = {};
+                            headers.forEach((h, idx) => obj[h] = values[idx] || '');
+                            
+                            if (type === 'cartoes') {
+                                appData.cards.push({
+                                    id: parseInt(obj.id) || Date.now() + i,
+                                    ultimos4: obj.ultimos4,
+                                    limite_total: parseFloat(obj.limite_total) || 0,
+                                    instituicao: obj.instituicao,
+                                    bandeira: obj.bandeira,
+                                    dia_vencimento: parseInt(obj.dia_vencimento) || 1
+                                });
+                                recordCount++;
+                            } else if (type === 'contas') {
+                                appData.accounts.push({
+                                    id: parseInt(obj.id) || Date.now() + i,
+                                    instituicao: obj.instituicao,
+                                    saldo_inicial: parseFloat(obj.saldo_inicial) || 0,
+                                    data_saldo_inicial: obj.data_saldo_inicial
+                                });
+                                recordCount++;
+                            } else if (type === 'transacoes') {
+                                appData.transactions.push({
+                                    id: parseInt(obj.id) || Date.now() + i,
+                                    tipo: obj.tipo || 'debito',
+                                    descricao: obj.descricao,
+                                    estabelecimento: obj.estabelecimento,
+                                    data: obj.data,
+                                    valor: parseFloat(obj.valor) || 0,
+                                    id_conta: obj.id_conta ? parseInt(obj.id_conta) : null,
+                                    id_cartao: obj.id_cartao ? parseInt(obj.id_cartao) : null,
+                                    numero_parcelas: parseInt(obj.numero_parcelas) || 1,
+                                    parcela_atual: parseInt(obj.parcela_atual) || 1,
+                                    data_vencimento_fatura: obj.data_vencimento_fatura,
+                                    fixo: obj.fixo === 'true' || obj.fixo === '1',
+                                    recorrencia: parseInt(obj.recorrencia) || 0,
+                                    recorrencia_unidade: obj.recorrencia_unidade,
+                                    observacao: obj.observacao,
+                                    categoria: obj.categoria
+                                });
+                                recordCount++;
+                            }
+                        }
+                        
+                        results[file.name] = recordCount;
+                        totalRecords += recordCount;
+                        
+                    } catch (error) {
+                        console.error('Erro ao processar arquivo', file.name, error);
+                        results[file.name] = 'Erro';
+                    }
+                    
                     processed++;
-                    totalRecords += recordCount;
-                    results[file.name] = recordCount;
                     
                     if (processed === files.length) {
                         finishImport(results, totalRecords);
                     }
-                });
+                };
+                
+                reader.onerror = function() {
+                    results[file.name] = 'Erro de leitura';
+                    processed++;
+                    if (processed === files.length) {
+                        finishImport(results, totalRecords);
+                    }
+                };
+                
+                reader.readAsText(file, 'UTF-8');
             });
-        }
-        
-        function detectFileType(filename, headers) {
-            const headerStr = headers.join(',').toLowerCase();
-            if (headerStr.includes('ultimos4') || headerStr.includes('dia_vencimento')) return 'cartoes';
-            if (headerStr.includes('saldo_inicial') && !headerStr.includes('id_conta')) return 'contas';
-            if (headerStr.includes('tipo') && headerStr.includes('descricao')) return 'transacoes';
-            if (filename.includes('cartoes')) return 'cartoes';
-            if (filename.includes('conta')) return 'contas';
-            if (filename.includes('transacao')) return 'transacoes';
-            return null;
-        }
-        
-        function readCSV(file, callback) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const csv = e.target.result;
-                const lines = csv.trim().split('\n');
-                let headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-                if (headers.length === 1) {
-                    headers = lines[0].split(';').map(h => h.trim().replace(/^"|"$/g, ''));
-                }
-                
-                const type = detectFileType(file.name, headers);
-                if (!type) {
-                    showAlert(`❌ Arquivo ${file.name} não reconhecido!`, 'danger');
-                    callback(0);
-                    return;
-                }
-                
-                let processedCount = 0;
-                for (let i = 1; i < lines.length; i++) {
-                    if (!lines[i].trim()) continue;
-                    let values = [];
-                    let inQuotes = false;
-                    let current = '';
-                    
-                    for (let j = 0; j < lines[i].length; j++) {
-                        const char = lines[i][j];
-                        if (char === '"') {
-                            inQuotes = !inQuotes;
-                        } else if ((char === ',' || char === ';') && !inQuotes) {
-                            values.push(current.trim().replace(/^"|"$/g, ''));
-                            current = '';
-                        } else {
-                            current += char;
-                        }
-                    }
-                    values.push(current.trim().replace(/^"|"$/g, ''));
-                    
-                    const obj = {};
-                    headers.forEach((h, idx) => obj[h] = values[idx]);
-                    
-                    if (type === 'cartoes') {
-                        appData.cards.push({
-                            id: parseInt(obj.id) || Date.now(),
-                            ultimos4: obj.ultimos4 || '',
-                            limite_total: parseFloat(obj.limite_total) || 0,
-                            instituicao: obj.instituicao || '',
-                            bandeira: obj.bandeira || '',
-                            dia_vencimento: parseInt(obj.dia_vencimento) || 1
-                        });
-                        processedCount++;
-                    } else if (type === 'contas') {
-                        appData.accounts.push({
-                            id: parseInt(obj.id) || Date.now(),
-                            instituicao: obj.instituicao || '',
-                            saldo_inicial: parseFloat(obj.saldo_inicial) || 0,
-                            data_saldo_inicial: obj.data_saldo_inicial || ''
-                        });
-                        processedCount++;
-                    } else if (type === 'transacoes') {
-                        appData.transactions.push({
-                            id: parseInt(obj.id) || Date.now(),
-                            tipo: obj.tipo || 'debito',
-                            descricao: obj.descricao || '',
-                            estabelecimento: obj.estabelecimento || '',
-                            data: obj.data || '',
-                            valor: parseFloat(obj.valor) || 0,
-                            id_conta: obj.id_conta ? parseInt(obj.id_conta) : null,
-                            id_cartao: obj.id_cartao ? parseInt(obj.id_cartao) : null,
-                            numero_parcelas: parseInt(obj.numero_parcelas) || 1,
-                            parcela_atual: parseInt(obj.parcela_atual) || 1,
-                            data_vencimento_fatura: obj.data_vencimento_fatura || '',
-                            fixo: obj.fixo === 'true',
-                            recorrencia: parseInt(obj.recorrencia) || 0,
-                            recorrencia_unidade: obj.recorrencia_unidade || '',
-                            observacao: obj.observacao || '',
-                            categoria: obj.categoria || ''
-                        });
-                        processedCount++;
-                    }
-                }
-                callback(processedCount);
-            };
-            reader.readAsText(file);
         }
         
         async function finishImport(results, totalRecords) {
@@ -2163,15 +2435,19 @@
             displayCards();
             displayAccounts();
             displayHistory();
+            displayRecentTransactions();
             updatePaymentMethods();
             updateDashboard();
             
             const statusDiv = document.getElementById('import-status');
-            let statusHtml = '✅ <strong>Importação Concluída!</strong><br>';
+            let statusHtml = '<div style="color: var(--color-green);">✅ <strong>Importação Concluída!</strong></div>';
+            
             for (const [filename, count] of Object.entries(results)) {
-                statusHtml += `• ${filename}: ${count} registro(s)<br>`;
+                const color = typeof count === 'number' ? 'var(--text-secondary)' : 'var(--color-red)';
+                statusHtml += `<div style="color: ${color}; font-size: 11px;">• ${filename}: ${count}</div>`;
             }
-            statusHtml += `<strong>Total: ${totalRecords} registro(s)</strong>`;
+            
+            statusHtml += `<div style="margin-top: 5px; color: var(--color-dark);"><strong>Total: ${totalRecords} registro(s)</strong></div>`;
             statusDiv.innerHTML = statusHtml;
             
             document.getElementById('file-multi').value = '';
@@ -2179,17 +2455,17 @@
         }
         
         async function clearData() {
-            if (confirm('⚠️ IRREVERSÍVEL! Isso apagará TODOS os dados. Tem certeza?')) {
-                if (confirm('SEGUNDA CONFIRMAÇÃO: Esta ação não pode ser desfeita!')) {
-                    appData = { cards: [], accounts: [], transactions: [] };
-                    await saveCloudData();
-                    displayCards();
-                    displayAccounts();
-                    displayHistory();
-                    updateDashboard();
-                    showAlert('✅ Todos os dados foram removidos!', 'success');
-                }
-            }
+            if (!confirm('⚠️ ATENÇÃO: Isso apagará TODOS os seus dados. Tem certeza?')) return;
+            if (!confirm('❌ CONFIRMAÇÃO FINAL: Esta ação NÃO pode ser desfeita! Apagar todos os dados?')) return;
+            
+            appData = { cards: [], accounts: [], transactions: [] };
+            await saveCloudData();
+            displayCards();
+            displayAccounts();
+            displayHistory();
+            displayRecentTransactions();
+            updateDashboard();
+            showAlert('✅ Todos os dados foram removidos!', 'success');
         }
         
         // ================= BACKUP NA NUVEM =================
@@ -2202,17 +2478,10 @@
             try {
                 const backupName = `backup-${new Date().toISOString().split('T')[0]}-${Date.now()}`;
                 
-                const { error } = await supabase
-                    .from('backups')
-                    .insert({
-                        user_id: currentUser.id,
-                        backup_name: backupName,
-                        data: appData
-                    });
+                // Salva primeiro os dados atuais
+                await saveCloudData();
                 
-                if (error) throw error;
-                
-                showAlert('✅ Backup criado com sucesso', 'success');
+                showAlert('✅ Backup criado com sucesso!', 'success');
                 
             } catch (error) {
                 console.error('Erro ao criar backup:', error);
@@ -2224,7 +2493,7 @@
         function copyToClipboard(text) {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text).then(() => {
-                    showAlert('📋 Copiado para clipboard!', 'success');
+                    showAlert('📋 Copiado para área de transferência!', 'success');
                 }).catch(() => {
                     fallbackCopy(text);
                 });
@@ -2242,7 +2511,7 @@
             textarea.select();
             try {
                 document.execCommand('copy');
-                showAlert('📋 Copiado para clipboard!', 'success');
+                showAlert('📋 Copiado para área de transferência!', 'success');
             } catch (err) {
                 showAlert('❌ Erro ao copiar!', 'danger');
             }
@@ -2259,12 +2528,14 @@
                 return;
             }
             
-            // Verifica conexão
+            // Verifica conexão de rede
             isOnline = navigator.onLine;
             window.addEventListener('online', () => {
                 isOnline = true;
                 updateSyncStatus(useCloudStorage);
-                if (useCloudStorage) forceSync();
+                if (useCloudStorage && currentUser) {
+                    forceSync();
+                }
             });
             
             window.addEventListener('offline', () => {
@@ -2272,10 +2543,7 @@
                 updateSyncStatus(false);
             });
             
-            // Verifica autenticação
-            await checkAuth();
-            
-            // Inicializa máscaras de moeda
+            // Configura máscaras de moeda
             document.querySelectorAll('.currency-input').forEach(input => {
                 input.addEventListener('input', function(e) {
                     let value = e.target.value.replace(/\D/g, '');
@@ -2293,20 +2561,41 @@
             });
             
             // Configura listeners
-            document.getElementById('bill-fixed').addEventListener('change', function() {
-                document.getElementById('bill-recurrence').style.display = this.checked ? 'block' : 'none';
-            });
+            const billFixedCheckbox = document.getElementById('bill-fixed');
+            if (billFixedCheckbox) {
+                billFixedCheckbox.addEventListener('change', function() {
+                    document.getElementById('bill-recurrence').style.display = this.checked ? 'block' : 'none';
+                });
+            }
             
-            document.getElementById('search-trans').addEventListener('input', displayHistory);
+            const searchInput = document.getElementById('search-trans');
+            if (searchInput) {
+                searchInput.addEventListener('input', displayHistory);
+            }
             
+            // Fecha modais ao clicar fora
             window.onclick = function(e) {
                 if (e.target.classList.contains('modal')) {
                     e.target.classList.remove('show');
                 }
             };
             
+            // Fecha modais com ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.modal.show').forEach(modal => {
+                        modal.classList.remove('show');
+                    });
+                }
+            });
+            
+            // Verifica autenticação
+            await checkAuth();
+            
             // Atualiza informações iniciais
             updateConfigInfo();
+            
+            console.log(' FinanceApp v3.0 inicializado com sucesso!');
         }
         
         // ================= INICIALIZAÇÃO =================
