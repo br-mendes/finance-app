@@ -3,482 +3,2325 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Financeiro</title>
+    <title>FinanceApp - Controle Financeiro Premium v3</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💰</text></svg>">
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --color-dark: #151F30;
+            --color-blue: #49ac2a;
+            --color-red: #e31f1f;
+            --color-green: #49ac2a;
+            --color-orange: #ffafd2;
+            --color-purple: #ff8e8e;
+            --text-primary: #151F30;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --sidebar-width: 280px;
+        }
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f5f5f5;
+            color: var(--text-primary);
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, #1a1f36 0%, #0f1419 100%);
+            color: white;
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        .sidebar-header {
+            padding: 30px 20px;
+            background: linear-gradient(135deg, #49ac2a 0%, #ffafd2 100%);
+            border-bottom: 3px solid rgba(255,255,255,0.1);
+        }
+        .app-title {
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .app-subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .sidebar-nav {
+            padding: 20px 0;
+        }
+        .nav-item {
+            padding: 15px 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 15px;
+            color: rgba(255,255,255,0.8);
+        }
+        .nav-item:hover {
+            background-color: rgba(255,255,255,0.1);
+            border-left-color: #49ac2a;
+            color: white;
+        }
+        .nav-item.active {
+            background-color: rgba(73, 172, 42, 0.2);
+            border-left-color: #49ac2a;
+            color: white;
+            font-weight: 500;
+        }
+        main {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+        }
+        .page-header {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .page-header h1, .page-header h2 {
+            color: var(--color-dark);
+            margin-bottom: 5px;
+        }
+        .page-header p {
+            color: var(--text-secondary);
+            margin: 0;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: var(--bg-secondary);
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--color-blue);
         }
-        h1 {
-            color: #333;
+        .stat-card.debit { border-left-color: var(--color-red); }
+        .stat-card.credit { border-left-color: var(--color-green); }
+        .stat-card.parcel { border-left-color: var(--color-orange); }
+        .stat-card.limit { border-left-color: var(--color-purple); }
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
         }
-        .card {
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--color-dark);
+        }
+        .chart-container {
+            background: var(--bg-secondary);
             padding: 20px;
-            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+        .period-filter {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .period-filter label {
+            font-size: 12px;
+            margin: 0;
+            white-space: nowrap;
+        }
+        .period-filter input {
+            padding: 6px;
+            font-size: 13px;
+            width: 120px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--color-dark);
+            font-size: 13px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--color-blue);
+            box-shadow: 0 0 0 3px rgba(73, 172, 42, 0.1);
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        .btn-primary {
+            background-color: var(--color-blue);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #3a8a1a;
+        }
+        .btn-secondary {
+            background-color: var(--color-orange);
+            color: var(--color-dark);
+        }
+        .btn-danger {
+            background-color: var(--color-red);
+            color: white;
+        }
+        .btn-success {
+            background-color: var(--color-green);
+            color: white;
+        }
+        .table-container {
+            overflow-x: auto;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
         }
         th {
-            background-color: #f2f2f2;
+            background-color: #f3f4f6;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--color-dark);
+            border-bottom: 2px solid var(--border-color);
         }
-        .status {
-            padding: 4px 8px;
-            border-radius: 4px;
+        td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        tr:hover {
+            background-color: #f9fafb;
+        }
+        .action-btn {
+            padding: 5px 10px;
             font-size: 12px;
+            margin-right: 5px;
         }
-        .active {
-            background: #d4edda;
-            color: #155724;
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
         }
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
+        .badge-danger {
+            background-color: rgba(227, 31, 31, 0.1);
+            color: var(--color-red);
+        }
+        .badge-success {
+            background-color: rgba(73, 172, 42, 0.1);
+            color: var(--color-green);
+        }
+        .badge-warning {
+            background-color: rgba(255, 175, 210, 0.2);
+            color: var(--color-orange);
+        }
+        .modal {
             display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
         }
-        button {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
+        .modal.show {
+            display: block;
+        }
+        .modal-content {
+            background-color: var(--bg-secondary);
+            margin: auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .close {
+            color: var(--text-secondary);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
             cursor: pointer;
-            margin: 5px;
         }
-        button:hover {
-            background: #0056b3;
+        .alert {
+            padding: 12px 20px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 3000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease;
         }
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #666;
+        .alert.show {
+            display: block;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        .alert-success {
+            background-color: rgba(73, 172, 42, 0.9);
+            border-left: 4px solid var(--color-green);
+            color: white;
+        }
+        .alert-danger {
+            background-color: rgba(227, 31, 31, 0.9);
+            border-left: 4px solid var(--color-red);
+            color: white;
+        }
+        .alert-warning {
+            background-color: rgba(255, 175, 210, 0.9);
+            border-left: 4px solid var(--color-orange);
+            color: var(--color-dark);
+        }
+        .alert-info {
+            background-color: rgba(59, 130, 246, 0.9);
+            border-left: 4px solid #3b82f6;
+            color: white;
+        }
+        .insight-box {
+            background-color: rgba(73, 172, 42, 0.05);
+            border-left: 4px solid var(--color-blue);
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: var(--color-blue);
+            transition: width 0.3s;
+        }
+        
+        /* Estilos para login/usuário */
+        .login-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 4000;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-overlay.active {
+            display: flex;
+        }
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .user-menu {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #49ac2a, #ffafd2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .sync-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1001;
+        }
+        .sync-status.online {
+            color: var(--color-green);
+        }
+        .sync-status.offline {
+            color: var(--color-red);
+        }
+        .sync-status.syncing {
+            color: var(--color-orange);
+        }
+        
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .sidebar { width: 200px; }
+            main { margin-left: 200px; padding: 15px; }
+            .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+            .user-menu { 
+                top: 10px; 
+                right: 10px; 
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+        }
+        @media (max-width: 480px) {
+            .sidebar { position: absolute; left: -280px; }
+            main { margin-left: 0; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .user-menu {
+                position: relative;
+                top: 0;
+                right: 0;
+                margin-bottom: 20px;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Sistema Financeiro</h1>
-        
-        <div id="errorMessage" class="error"></div>
-        <div id="successMessage" class="error" style="background: #d4edda; color: #155724; display: none;"></div>
-        
-        <div class="card">
-            <h2>Status do Sistema</h2>
-            <p><strong>Conexão Supabase:</strong> <span id="connectionStatus">Verificando...</span></p>
-            <button onclick="testConnection()">Testar Conexão</button>
-        </div>
-        
-        <div class="card">
-            <h2>Dados do Usuário</h2>
-            <div id="userData" class="loading">Carregando dados do usuário...</div>
-            <button onclick="loadUserData()">Recarregar</button>
-        </div>
-        
-        <div class="card">
-            <h2>Transações Financeiras</h2>
-            <table id="financeTable">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Conta</th>
-                        <th>Cache</th>
-                        <th>Último Preço</th>
-                        <th>Atualizado em</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td colspan="5" class="loading">Carregando transações...</td></tr>
-                </tbody>
-            </table>
-            <button onclick="loadFinanceData()">Atualizar Dados</button>
-            <button onclick="addTransaction()">Nova Transação</button>
-        </div>
-        
-        <div class="card">
-            <h2>Backups</h2>
-            <table id="backupsTable">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nome</th>
-                        <th>Criado em</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td colspan="4" class="loading">Carregando backups...</td></tr>
-                </tbody>
-            </table>
-            <button onclick="loadBackups()">Recarregar Backups</button>
-            <button onclick="createBackup()">Criar Backup</button>
+    <!-- Overlay de Login -->
+    <div id="loginOverlay" class="login-overlay active">
+        <div class="login-box">
+            <h2 style="text-align: center; margin-bottom: 5px;">💰 FinanceApp</h2>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 30px;">v3.0 - Com sincronização na nuvem</p>
+            
+            <div id="loginSection">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" placeholder="seu@email.com" autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+                </div>
+                <button class="btn btn-primary" onclick="handleLogin()" style="width: 100%; margin-bottom: 10px;">
+                    Entrar / Cadastrar
+                </button>
+                <button class="btn btn-secondary" onclick="useOfflineMode()" style="width: 100%;">
+                    Usar Modo Offline
+                </button>
+                <p id="loginError" style="color: var(--color-red); margin-top: 15px; text-align: center; display: none;"></p>
+            </div>
+            
+            <div id="registerSection" style="display: none;">
+                <div class="form-group">
+                    <label>Nome Completo</label>
+                    <input type="text" id="registerName" placeholder="Seu nome">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="registerEmail" placeholder="seu@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="registerPassword" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="form-group">
+                    <label>Confirmar Senha</label>
+                    <input type="password" id="registerConfirmPassword" placeholder="Digite novamente">
+                </div>
+                <button class="btn btn-success" onclick="handleRegister()" style="width: 100%; margin-bottom: 10px;">
+                    Criar Conta
+                </button>
+                <button class="btn btn-secondary" onclick="showLogin()" style="width: 100%;">
+                    Voltar para Login
+                </button>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px; font-size: 12px; color: var(--text-secondary);">
+                <p>📡 Dados sincronizados na nuvem</p>
+                <p>💾 Backup automático</p>
+                <p>📱 Acesse de qualquer dispositivo</p>
+            </div>
         </div>
     </div>
 
-    <!-- Biblioteca Supabase (incluída apenas UMA vez) -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    
-    <script>
-        // =============================================
-        // CONFIGURAÇÃO ÚNICA DO SUPABASE
-        // =============================================
-        
-        // Verifica se o Supabase já foi inicializado globalmente
-        if (window.supabase && window.supabaseClient) {
-            console.log('Supabase já foi inicializado anteriormente');
-        } else {
-            try {
-                // Inicializa o Supabase UMA única vez
-                const supabaseUrl = 'https://lebfczoywiqkczppwuwg.supabase.co';
-                const supabaseKey = 'SUA_CHAVE_ANON_AQUI'; // Substitua pela sua chave
+    <!-- Menu do Usuário -->
+    <div id="userMenu" class="user-menu" style="display: none;">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <span id="userEmail">usuario@email.com</span>
+        <button class="btn btn-danger btn-sm" onclick="handleLogout()" style="padding: 5px 10px; font-size: 12px;">Sair</button>
+    </div>
+
+    <!-- Status de Sincronização -->
+    <div id="syncStatus" class="sync-status" style="display: none;">
+        <span id="syncIcon">🔵</span>
+        <span id="syncText">Conectado</span>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="app-title">💰 FinanceApp</div>
+            <div class="app-subtitle">v3.0 Premium</div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item active" onclick="showTab('dashboard')">📊 Dashboard</div>
+            <div class="nav-item" onclick="showTab('cartoes')">💳 Cartões & Contas</div>
+            <div class="nav-item" onclick="showTab('lancamentos')">📝 Lançamentos</div>
+            <div class="nav-item" onclick="showTab('historico')">📊 Histórico</div>
+            <div class="nav-item" onclick="showTab('config')">⚙️ Configurações</div>
+        </nav>
+    </aside>
+
+    <main>
+        <!-- DASHBOARD -->
+        <section id="dashboard" class="tab-content active">
+            <div class="page-header">
+                <h1>📊 Dashboard Financeiro</h1>
+                <p>Visão completa das suas finanças</p>
+            </div>
+
+            <div class="period-filter">
+                <label>📅 Período:</label>
+                <input type="date" id="start-date">
+                <input type="date" id="end-date">
+                <button class="btn btn-primary" onclick="updateDashboard()">Filtrar</button>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="stat-card debit">
+                    <div class="stat-label">Débito no Período</div>
+                    <div class="stat-value" id="debit-value">R$ 0,00</div>
+                </div>
+                <div class="stat-card credit">
+                    <div class="stat-label">Crédito à Vista</div>
+                    <div class="stat-value" id="credit-value">R$ 0,00</div>
+                </div>
+                <div class="stat-card parcel">
+                    <div class="stat-label">Parcelado a Pagar</div>
+                    <div class="stat-value" id="parcel-value">R$ 0,00</div>
+                </div>
+                <div class="stat-card limit">
+                    <div class="stat-label">Limite Disponível</div>
+                    <div class="stat-value" id="limit-value">R$ 0,00</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Saldo em Contas</div>
+                    <div class="stat-value" id="balance-value">R$ 0,00</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="chart-container">
+                    <h3 style="margin-bottom: 20px;">💳 Gastos por Meio</h3>
+                    <canvas id="paymentChart" style="max-height: 300px;"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3 style="margin-bottom: 20px;">📊 Gastos por Categoria</h3>
+                    <canvas id="categoryChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+
+            <div id="insights" style="margin-top: 30px;"></div>
+        </section>
+
+        <!-- CARTÕES & CONTAS -->
+        <section id="cartoes" class="tab-content">
+            <div class="page-header">
+                <h2>💳 Cartões de Crédito e Contas Bancárias</h2>
+                <p>Gerencie seus meios de pagamento</p>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px;">💳 Cartões de Crédito</h3>
+                <button class="btn btn-primary" onclick="openCardModal()" style="margin-bottom: 15px;">➕ Adicionar Cartão</button>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Últimos 4</th>
+                                <th>Banco</th>
+                                <th>Limite Total</th>
+                                <th>Limite Usado</th>
+                                <th>Vencimento</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cards-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div>
+                <h3 style="margin-bottom: 15px;">🏦 Contas Bancárias</h3>
+                <button class="btn btn-primary" onclick="openAccountModal()" style="margin-bottom: 15px;">➕ Adicionar Conta</button>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Banco</th>
+                                <th>Saldo Inicial</th>
+                                <th>Saldo Atual</th>
+                                <th>Data Saldo</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accounts-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- LANÇAMENTOS -->
+        <section id="lancamentos" class="tab-content">
+            <div class="page-header">
+                <h2>📝 Registre suas Transações</h2>
+                <p>Adicione gastos, receitas e transferências</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                <button class="btn btn-success" onclick="openDebitModal()" style="padding: 20px;">💸 Compra no Débito</button>
+                <button class="btn btn-success" onclick="openCreditModal()" style="padding: 20px;">💳 Compra no Crédito</button>
+                <button class="btn btn-success" onclick="openBillModal()" style="padding: 20px;">🧾 Pagamento Recorrente</button>
+                <button class="btn btn-success" onclick="openIncomeModal()" style="padding: 20px;">💰 Receita/Provento</button>
+            </div>
+
+            <div id="recent-transactions" class="chart-container"></div>
+        </section>
+
+        <!-- HISTÓRICO -->
+        <section id="historico" class="tab-content">
+            <div class="page-header">
+                <h2>📊 Histórico de Transações</h2>
+                <p>Visualize e gerencie todas as suas transações</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <input type="text" id="search-trans" placeholder="🔍 Buscar por descrição..." style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 5px; font-size: 14px;">
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Tipo</th>
+                            <th>Descrição</th>
+                            <th>Categoria</th>
+                            <th>Valor</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- CONFIGURAÇÕES -->
+        <section id="config" class="tab-content">
+            <div class="page-header">
+                <h2>⚙️ Configurações e Backup</h2>
+                <p>Sincronize e faça backup dos seus dados</p>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 40px;">
+                <div>
+                    <h4>📥 Importar CSV</h4>
+                    <div class="form-group">
+                        <label>Selecione os 3 arquivos (Cartões, Contas, Transações)</label>
+                        <input type="file" id="file-multi" accept=".csv" multiple>
+                    </div>
+                    <button class="btn btn-success" onclick="importCSV()">📥 Importar Arquivos</button>
+                    <div id="import-status" style="margin-top: 15px; font-size: 12px; color: var(--text-secondary);"></div>
+                </div>
+
+                <div>
+                    <h4>📤 Exportar CSV</h4>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 15px;">Baixe seus dados em formato CSV</p>
+                    <button class="btn btn-primary" onclick="exportCSV('cartoes')" style="width: 100%; margin-bottom: 10px;">💳 Cartões</button>
+                    <button class="btn btn-primary" onclick="exportCSV('contas')" style="width: 100%; margin-bottom: 10px;">🏦 Contas</button>
+                    <button class="btn btn-primary" onclick="exportCSV('transacoes')" style="width: 100%; margin-bottom: 10px;">📊 Transações</button>
+                    <button class="btn btn-danger" onclick="clearData()" style="width: 100%; margin-top: 20px;">🗑️ Limpar Tudo</button>
+                </div>
+            </div>
+
+            <div style="background-color: rgba(73, 172, 42, 0.05); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px;">
+                <h3 style="margin-bottom: 20px;">📋 Estrutura dos Arquivos CSV</h3>
                 
-                window.supabase = supabase.createClient(supabaseUrl, supabaseKey);
-                window.supabaseClient = window.supabase; // Backup para referência
+                <div style="margin-bottom: 30px;">
+                    <h4>💳 cartoes.csv</h4>
+                    <p style="color: var(--text-secondary); font-size: 12px; margin-bottom: 10px;">Separador: <strong>,</strong> (vírgula) ou <strong>;</strong> (ponto e vírgula)</p>
+                    <div style="background-color: var(--bg-secondary); padding: 15px; border-radius: 5px; overflow-x: auto; font-family: monospace; font-size: 11px; line-height: 1.8; position: relative;">
+                        <button class="btn btn-sm" style="position: absolute; top: 10px; right: 10px; padding: 5px 10px; font-size: 11px;" onclick="copyToClipboard('id,ultimos4,limite_total,instituicao,bandeira,dia_vencimento\n1,\"1234\",\"5000.00\",\"Itaú\",\"Visa\",\"10\"\n2,\"5678\",\"3000.00\",\"Bradesco\",\"Mastercard\",\"15\"')">📋 Copiar</button>
+                        id,ultimos4,limite_total,instituicao,bandeira,dia_vencimento<br>
+                        1,"1234","5000.00","Itaú","Visa","10"<br>
+                        2,"5678","3000.00","Bradesco","Mastercard","15"
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 30px;">
+                    <h4>🏦 contas.csv</h4>
+                    <p style="color: var(--text-secondary); font-size: 12px; margin-bottom: 10px;">Separador: <strong>,</strong> (vírgula) ou <strong>;</strong> (ponto e vírgula)</p>
+                    <div style="background-color: var(--bg-secondary); padding: 15px; border-radius: 5px; overflow-x: auto; font-family: monospace; font-size: 11px; line-height: 1.8; position: relative;">
+                        <button class="btn btn-sm" style="position: absolute; top: 10px; right: 10px; padding: 5px 10px; font-size: 11px;" onclick="copyToClipboard('id,instituicao,saldo_inicial,data_saldo_inicial\n1,\"Itaú\",\"10000.00\",\"2025-01-15\"\n2,\"Nubank\",\"5000.00\",\"2025-01-15\"')">📋 Copiar</button>
+                        id,instituicao,saldo_inicial,data_saldo_inicial<br>
+                        1,"Itaú","10000.00","2025-01-15"<br>
+                        2,"Nubank","5000.00","2025-01-15"
+                    </div>
+                </div>
+
+                <div>
+                    <h4>📊 transacoes.csv</h4>
+                    <p style="color: var(--text-secondary); font-size: 12px; margin-bottom: 10px;">Separador: <strong>,</strong> (vírgula) ou <strong>;</strong> (ponto e vírgula)</p>
+                    <div style="background-color: var(--bg-secondary); padding: 15px; border-radius: 5px; overflow-x: auto; font-family: monospace; font-size: 10px; line-height: 1.8; position: relative;">
+                        <button class="btn btn-sm" style="position: absolute; top: 10px; right: 10px; padding: 5px 10px; font-size: 11px;" onclick="copyToClipboard('id,tipo,descricao,estabelecimento,data,valor,id_conta,id_cartao,numero_parcelas,parcela_atual,data_vencimento_fatura,fixo,recorrencia,recorrencia_unidade,observacao,categoria\n1,\"debito\",\"Mercado\",\"Carrefour\",\"2025-01-15\",\"150.50\",\"1\",\"\",\"1\",\"1\",\"\",\"false\",\"0\",\"\",\"Compra semanal\",\"alimentacao\"\n2,\"conta\",\"Netflix\",\"Netflix\",\"2025-01-20\",\"29.90\",\"\",\"1\",\"1\",\"1\",\"2025-02-10\",\"false\",\"0\",\"\",\"Streaming\",\"assinatura\"\n3,\"provento\",\"Salário\",\"Empresa\",\"2025-02-01\",\"5000.00\",\"1\",\"\",\"1\",\"1\",\"\",\"false\",\"0\",\"\",\"Salário mensal\",\"salario\"')">📋 Copiar</button>
+                        id,tipo,descricao,estabelecimento,data,valor,id_conta,id_cartao,numero_parcelas,parcela_atual,data_vencimento_fatura,fixo,recorrencia,recorrencia_unidade,observacao,categoria<br>
+                        1,"debito","Mercado","Carrefour","2025-01-15","150.50","1","","1","1","","false","0","","Compra semanal","alimentacao"<br>
+                        2,"conta","Netflix","Netflix","2025-01-20","29.90","","1","1","1","2025-02-10","false","0","","Streaming","assinatura"<br>
+                        3,"provento","Salário","Empresa","2025-02-01","5000.00","1","","1","1","","false","0","","Salário mensal","salario"
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px; background-color: rgba(59, 130, 246, 0.05); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px;">
+                <h3 style="margin-bottom: 20px;">☁️ Configurações da Nuvem</h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h4>🔄 Sincronização</h4>
+                        <div id="syncInfo" style="margin-bottom: 15px;">
+                            <p>Status: <span id="syncStatusText">Desconectado</span></p>
+                            <p>Última sincronização: <span id="lastSyncTime">Nunca</span></p>
+                            <p>Modo: <span id="syncMode">Offline</span></p>
+                        </div>
+                        <button class="btn btn-primary" onclick="forceSync()" style="width: 100%; margin-bottom: 10px;">🔄 Sincronizar Agora</button>
+                        <button class="btn btn-secondary" onclick="createBackup()" style="width: 100%; margin-bottom: 10px;">💾 Criar Backup</button>
+                    </div>
+                    
+                    <div>
+                        <h4>📊 Estatísticas</h4>
+                        <div id="statsInfo">
+                            <p>Cartões cadastrados: <span id="cardsCount">0</span></p>
+                            <p>Contas cadastradas: <span id="accountsCount">0</span></p>
+                            <p>Transações registradas: <span id="transactionsCount">0</span></p>
+                            <p>Armazenamento usado: <span id="storageUsed">0 KB</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODALS -->
+    <div id="cardModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="this.parentElement.parentElement.classList.remove('show')">&times;</span>
+            <h2>💳 Cartão de Crédito</h2>
+            <form id="cardForm">
+                <div class="form-group">
+                    <label>Últimos 4 Dígitos</label>
+                    <input type="text" id="card-last4" maxlength="4" required>
+                </div>
+                <div class="form-group">
+                    <label>Banco/Instituição</label>
+                    <input type="text" id="card-issuer" required>
+                </div>
+                <div class="form-group">
+                    <label>Bandeira</label>
+                    <select id="card-flag" required>
+                        <option>Visa</option>
+                        <option>Mastercard</option>
+                        <option>Elo</option>
+                        <option>Amex</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Limite Total (R$)</label>
+                    <input type="text" id="card-limit" class="currency-input" placeholder="Ex: 5.000,00" required>
+                </div>
+                <div class="form-group">
+                    <label>Dia do Vencimento</label>
+                    <input type="number" id="card-due-day" min="1" max="31" required>
+                </div>
+                <button type="button" class="btn btn-success" onclick="saveCard()" style="width: 100%;">Salvar Cartão</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="accountModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="this.parentElement.parentElement.classList.remove('show')">&times;</span>
+            <h2>🏦 Conta Bancária</h2>
+            <form id="accountForm">
+                <div class="form-group">
+                    <label>Banco/Instituição</label>
+                    <input type="text" id="account-issuer" required>
+                </div>
+                <div class="form-group">
+                    <label>Saldo Inicial (R$)</label>
+                    <input type="text" id="account-balance" class="currency-input" placeholder="Ex: 10.000,00" required>
+                </div>
+                <div class="form-group">
+                    <label>Data do Saldo</label>
+                    <input type="date" id="account-date" required>
+                </div>
+                <button type="button" class="btn btn-success" onclick="saveAccount()" style="width: 100%;">Salvar Conta</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="debitModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="this.parentElement.parentElement.classList.remove('show')">&times;</span>
+            <h2>💸 Compra no Débito</h2>
+            <form id="debitForm">
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <input type="text" id="debit-desc" required>
+                </div>
+                <div class="form-group">
+                    <label>Estabelecimento</label>
+                    <input type="text" id="debit-establishment">
+                </div>
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="debit-category" required>
+                        <option value="">Selecione</option>
+                        <option value="alimentacao">🍔 Alimentação</option>
+                        <option value="transporte">🚗 Transporte</option>
+                        <option value="saude">💊 Saúde</option>
+                        <option value="moradia">🏠 Moradia</option>
+                        <option value="lazer">🌴 Lazer</option>
+                        <option value="educacao">📚 Educação</option>
+                        <option value="outros">🆘 Outros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Data</label>
+                    <input type="date" id="debit-date" required>
+                </div>
+                <div class="form-group">
+                    <label>Valor (R$)</label>
+                    <input type="text" id="debit-value" class="currency-input" placeholder="Ex: 150,50" required>
+                </div>
+                <div class="form-group">
+                    <label>Conta</label>
+                    <select id="debit-account" required></select>
+                </div>
+                <button type="button" class="btn btn-success" onclick="saveDebit()" style="width: 100%;">Registrar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="creditModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="this.parentElement.parentElement.classList.remove('show')">&times;</span>
+            <h2>💳 Compra no Crédito</h2>
+            <form id="creditForm">
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <input type="text" id="credit-desc" required>
+                </div>
+                <div class="form-group">
+                    <label>Estabelecimento</label>
+                    <input type="text" id="credit-establishment">
+                </div>
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="credit-category" required>
+                        <option value="">Selecione</option>
+                        <option value="alimentacao">🍔 Alimentação</option>
+                        <option value="transporte">🚗 Transporte</option>
+                        <option value="saude">💊 Saúde</option>
+                        <option value="moradia">🏠 Moradia</option>
+                        <option value="lazer">🌴 Lazer</option>
+                        <option value="educacao">📚 Educação</option>
+                        <option value="outros">🆘 Outros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Data da Compra</label>
+                    <input type="date" id="credit-date" required>
+                </div>
+                <div class="form-group">
+                    <label>Valor Total (R$)</label>
+                    <input type="text" id="credit-value" class="currency-input" placeholder="Ex: 1.500,00" required>
+                </div>
+                <div class="form-group">
+                    <label>Número de Parcelas</label>
+                    <input type="number" id="credit-parcels" min="1" value="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Cartão</label>
+                    <select id="credit-card" required></select>
+                </div>
+                <button type="button" class="btn btn-success" onclick="saveCredit()" style="width: 100%;">Registrar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="billModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="this.parentElement.parentElement.classList.remove('show')">&times;</span>
+            <h2>🧾 Pagamento Recorrente</h2>
+            <form id="billForm">
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <input type="text" id="bill-desc" required>
+                </div>
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="bill-category" required>
+                        <option value="moradia">🏠 Aluguel</option>
+                        <option value="utilidades">💡 Utilidades</option>
+                        <option value="assinatura">🧾 Assinatura</option>
+                        <option value="outros">🆘 Outros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Valor (R$)</label>
+                    <input type="text" id="bill-value" class="currency-input" placeholder="Ex: 850,00" required>
+                </div>
+                <div class="form-group">
+                    <label>Próxima Data de Pagamento</label>
+                    <input type="date" id="bill-date" required>
+                </div>
+                <div class="form-group">
+                    <label>Conta</label>
+                    <select id="bill-account" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Fixo e Recorrente?</label>
+                    <input type="checkbox" id="bill-fixed">
+                </div>
+                <div class="form-group" id="bill-recurrence" style="display: none;">
+                    <label>Repetir por quantos meses?</label>
+                    <input type="number" id="bill-months" min="1" value="12">
+                </div>
+                <button type="button" class="btn btn-success" onclick="saveBill()" style="width: 100%;">Registrar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="incomeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="this.parentElement.parentElement.classList.remove('show')">&times;</span>
+            <h2>💰 Receita/Provento</h2>
+            <form id="incomeForm">
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <input type="text" id="income-desc" placeholder="ex: Salário, Freelance" required>
+                </div>
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="income-category" required>
+                        <option value="salario">💰 Salário</option>
+                        <option value="freelance">💸 Freelance</option>
+                        <option value="bonus">🎁 Bônus</option>
+                        <option value="cashback">🔄 Cashback</option>
+                        <option value="outros">🆘 Outros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Data</label>
+                    <input type="date" id="income-date" required>
+                </div>
+                <div class="form-group">
+                    <label>Valor (R$)</label>
+                    <input type="text" id="income-value" class="currency-input" placeholder="Ex: 5.000,00" required>
+                </div>
+                <div class="form-group">
+                    <label>Conta</label>
+                    <select id="income-account" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Observação</label>
+                    <textarea id="income-note" rows="2"></textarea>
+                </div>
+                <button type="button" class="btn btn-success" onclick="saveIncome()" style="width: 100%;">Registrar</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // ================= CONFIGURAÇÃO SUPABASE =================
+        const SUPABASE_URL = 'https://lebfczoywiqkczppwuwg.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlYmZjem95d2lxa2N6cHB3dXdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NzU2NDEsImV4cCI6MjA4MTU1MTY0MX0.wcbahZkGNp7AT6aTqwuVM3belEhVuqWVRb3MssoUKms';
+        
+        // Variável única para evitar declaração duplicada
+        if (typeof window.supabaseClient === 'undefined') {
+            window.supabaseClient = null;
+        }
+        
+        let currentUser = null;
+        let useCloudStorage = false;
+        let isOnline = navigator.onLine;
+        let syncInterval;
+        
+        // ================= DADOS DO APP =================
+        let appData = {
+            cards: [],
+            accounts: [],
+            transactions: []
+        };
+        
+        let charts = {};
+        
+        // ================= FUNÇÕES DE FORMATAÇÃO =================
+        function formatarMoeda(valor) {
+            if (typeof valor !== 'number') {
+                valor = parseFloat(valor) || 0;
+            }
+            return valor.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+        
+        function formatarData(dataStr) {
+            if (!dataStr) return '';
+            const date = new Date(dataStr);
+            return date.toLocaleDateString('pt-BR');
+        }
+        
+        function parseMoeda(valorStr) {
+            if (!valorStr) return 0;
+            let valor = valorStr.toString().replace(/[^\d,.-]/g, '');
+            valor = valor.replace(/\./g, '').replace(',', '.');
+            return parseFloat(valor) || 0;
+        }
+        
+        // ================= INICIALIZAÇÃO SUPABASE (CORRIGIDA) =================
+        async function initSupabase() {
+            try {
+                // Verifica se já existe uma instância
+                if (window.supabaseClient && window.supabaseClientInitialized) {
+                    console.log('Supabase já inicializado anteriormente');
+                    return true;
+                }
+                
+                // Inicializa apenas uma vez
+                const { createClient } = supabase;
+                window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+                window.supabaseClientInitialized = true;
                 
                 console.log('Supabase inicializado com sucesso');
-                showSuccess('Conexão com Supabase estabelecida');
-                
-                // Atualiza status de conexão
-                document.getElementById('connectionStatus').innerHTML = 
-                    '<span class="status active">Conectado</span>';
-                    
+                return true;
             } catch (error) {
                 console.error('Erro ao inicializar Supabase:', error);
-                showError('Falha ao conectar com Supabase: ' + error.message);
-                document.getElementById('connectionStatus').innerHTML = 
-                    '<span style="color: red;">Erro de conexão</span>';
+                return false;
             }
         }
         
-        // =============================================
-        // FUNÇÕES DE UTILIDADE
-        // =============================================
-        
-        function showError(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            
-            // Oculta após 5 segundos
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
+        // Função para obter a instância do Supabase
+        function getSupabase() {
+            if (!window.supabaseClient || !window.supabaseClientInitialized) {
+                console.warn('Supabase não inicializado. Tentando inicializar...');
+                initSupabase();
+            }
+            return window.supabaseClient;
         }
         
-        function showSuccess(message) {
-            const successDiv = document.getElementById('successMessage');
-            successDiv.textContent = message;
-            successDiv.style.display = 'block';
+        // ================= AUTENTICAÇÃO =================
+        async function checkAuth() {
+            try {
+                const supabase = getSupabase();
+                const { data: { session }, error } = await supabase.auth.getSession();
+                
+                if (error) throw error;
+                
+                if (session) {
+                    currentUser = session.user;
+                    useCloudStorage = true;
+                    updateUserInterface();
+                    await loadCloudData();
+                    startSyncInterval();
+                    return true;
+                } else {
+                    showLoginScreen();
+                    return false;
+                }
+            } catch (error) {
+                console.error('Erro ao verificar autenticação:', error);
+                useOfflineMode();
+                return false;
+            }
+        }
+        
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const errorElement = document.getElementById('loginError');
             
-            // Oculta após 3 segundos
+            if (!email || !password) {
+                showError('Preencha email e senha');
+                return;
+            }
+            
+            try {
+                showLoading('Entrando...');
+                const supabase = getSupabase();
+                
+                // Tenta fazer login
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                if (error) {
+                    // Se falhar, tenta cadastrar
+                    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                        email,
+                        password,
+                        options: {
+                            data: {
+                                email: email
+                            }
+                        }
+                    });
+                    
+                    if (signUpError) throw signUpError;
+                    
+                    currentUser = signUpData.user;
+                    showAlert('✅ Conta criada com sucesso! Verifique seu email.', 'success');
+                } else {
+                    currentUser = data.user;
+                }
+                
+                useCloudStorage = true;
+                hideLoginScreen();
+                updateUserInterface();
+                await loadCloudData();
+                startSyncInterval();
+                
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function handleRegister() {
+            const name = document.getElementById('registerName').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirmPassword').value;
+            const errorElement = document.getElementById('loginError');
+            
+            if (!name || !email || !password || !confirmPassword) {
+                showError('Preencha todos os campos');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showError('A senha deve ter pelo menos 6 caracteres');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showError('As senhas não coincidem');
+                return;
+            }
+            
+            try {
+                showLoading('Criando conta...');
+                const supabase = getSupabase();
+                
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            full_name: name,
+                            email: email
+                        }
+                    }
+                });
+                
+                if (error) throw error;
+                
+                currentUser = data.user;
+                useCloudStorage = true;
+                
+                // Cria perfil do usuário
+                await supabase
+                    .from('user_profiles')
+                    .upsert({
+                        id: currentUser.id,
+                        email: email,
+                        full_name: name
+                    });
+                
+                showAlert('✅ Conta criada com sucesso! Verifique seu email.', 'success');
+                showLogin();
+                
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function handleLogout() {
+            try {
+                const supabase = getSupabase();
+                await supabase.auth.signOut();
+                currentUser = null;
+                useCloudStorage = false;
+                stopSyncInterval();
+                showLoginScreen();
+                showAlert('🔒 Sessão encerrada', 'info');
+            } catch (error) {
+                console.error('Erro ao sair:', error);
+            }
+        }
+        
+        function useOfflineMode() {
+            useCloudStorage = false;
+            currentUser = null;
+            hideLoginScreen();
+            loadLocalData();
+            updateUserInterface();
+            showAlert('📱 Modo offline ativado', 'warning');
+        }
+        
+        // ================= INTERFACE DE USUÁRIO =================
+        function showLoginScreen() {
+            document.getElementById('loginOverlay').classList.add('active');
+            document.getElementById('userMenu').style.display = 'none';
+            document.getElementById('syncStatus').style.display = 'none';
+        }
+        
+        function hideLoginScreen() {
+            document.getElementById('loginOverlay').classList.remove('active');
+            document.getElementById('loginError').style.display = 'none';
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+        }
+        
+        function showRegister() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('registerSection').style.display = 'block';
+        }
+        
+        function showLogin() {
+            document.getElementById('registerSection').style.display = 'none';
+            document.getElementById('loginSection').style.display = 'block';
+        }
+        
+        function updateUserInterface() {
+            if (currentUser && useCloudStorage) {
+                // Mostra menu do usuário
+                document.getElementById('userMenu').style.display = 'flex';
+                document.getElementById('userEmail').textContent = currentUser.email;
+                document.getElementById('userAvatar').textContent = currentUser.email.charAt(0).toUpperCase();
+                
+                // Atualiza status de sincronização
+                updateSyncStatus(true);
+                
+                // Atualiza informações na página de configurações
+                updateConfigInfo();
+            } else {
+                document.getElementById('userMenu').style.display = 'none';
+                updateSyncStatus(false);
+            }
+        }
+        
+        function updateSyncStatus(connected) {
+            const syncElement = document.getElementById('syncStatus');
+            const syncIcon = document.getElementById('syncIcon');
+            const syncText = document.getElementById('syncText');
+            
+            if (connected) {
+                syncElement.style.display = 'flex';
+                syncElement.className = 'sync-status online';
+                syncIcon.textContent = '🟢';
+                syncText.textContent = 'Conectado à nuvem';
+            } else {
+                syncElement.style.display = 'flex';
+                syncElement.className = 'sync-status offline';
+                syncIcon.textContent = '🔴';
+                syncText.textContent = 'Modo offline';
+            }
+        }
+        
+        // ================= GERENCIAMENTO DE DADOS =================
+        async function loadCloudData() {
+            if (!useCloudStorage || !currentUser) return;
+            
+            try {
+                const supabase = getSupabase();
+                const { data, error } = await supabase
+                    .from('finance_data')
+                    .select('cards, accounts, transactions, last_sync')
+                    .eq('user_id', currentUser.id)
+                    .single();
+                
+                if (error && error.code !== 'PGRST116') throw error;
+                
+                if (data) {
+                    appData.cards = data.cards || [];
+                    appData.accounts = data.accounts || [];
+                    appData.transactions = data.transactions || [];
+                    
+                    // Atualiza interface
+                    updateConfigInfo();
+                    updateLastSync(data.last_sync);
+                    
+                    showAlert('✅ Dados carregados da nuvem', 'success');
+                } else {
+                    // Primeiro acesso - cria registro inicial
+                    await saveCloudData();
+                }
+                
+                // Atualiza UI
+                displayCards();
+                displayAccounts();
+                displayHistory();
+                displayRecentTransactions();
+                updatePaymentMethods();
+                updateDashboard();
+                
+            } catch (error) {
+                console.error('Erro ao carregar dados da nuvem:', error);
+                loadLocalData();
+                showAlert('⚠️ Erro ao carregar da nuvem. Usando dados locais.', 'warning');
+            }
+        }
+        
+        async function saveCloudData() {
+            if (!useCloudStorage || !currentUser) {
+                saveLocalData();
+                return;
+            }
+            
+            try {
+                const supabase = getSupabase();
+                const { error } = await supabase
+                    .from('finance_data')
+                    .upsert({
+                        user_id: currentUser.id,
+                        cards: appData.cards,
+                        accounts: appData.accounts,
+                        transactions: appData.transactions,
+                        last_sync: new Date()
+                    });
+                
+                if (error) throw error;
+                
+                // Salva backup local também
+                saveLocalData();
+                
+                // Atualiza último sync
+                updateLastSync(new Date());
+                
+                return true;
+                
+            } catch (error) {
+                console.error('Erro ao salvar na nuvem:', error);
+                saveLocalData();
+                showAlert('⚠️ Salvando localmente', 'warning');
+                return false;
+            }
+        }
+        
+        function loadLocalData() {
+            const saved = localStorage.getItem('financeAppV3');
+            if (saved) {
+                try {
+                    appData = JSON.parse(saved);
+                    // Atualiza UI
+                    displayCards();
+                    displayAccounts();
+                    displayHistory();
+                    displayRecentTransactions();
+                    updatePaymentMethods();
+                    updateDashboard();
+                    updateConfigInfo();
+                } catch (e) {
+                    console.error('Erro ao carregar dados locais:', e);
+                }
+            }
+        }
+        
+        function saveLocalData() {
+            localStorage.setItem('financeAppV3', JSON.stringify(appData));
+        }
+        
+        // ================= SINCRONIZAÇÃO =================
+        function startSyncInterval() {
+            if (syncInterval) clearInterval(syncInterval);
+            
+            syncInterval = setInterval(async () => {
+                if (useCloudStorage && isOnline && currentUser) {
+                    await saveCloudData();
+                }
+            }, 30000); // Sincroniza a cada 30 segundos
+        }
+        
+        function stopSyncInterval() {
+            if (syncInterval) {
+                clearInterval(syncInterval);
+                syncInterval = null;
+            }
+        }
+        
+        async function forceSync() {
+            if (!useCloudStorage || !currentUser) {
+                showAlert('⚠️ Faça login para sincronizar', 'warning');
+                return;
+            }
+            
+            try {
+                showLoading('Sincronizando...');
+                const success = await saveCloudData();
+                
+                if (success) {
+                    showAlert('✅ Sincronização concluída', 'success');
+                } else {
+                    showAlert('⚠️ Sincronização parcial', 'warning');
+                }
+            } catch (error) {
+                showAlert('❌ Erro na sincronização', 'danger');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // ================= FUNÇÕES UTILITÁRIAS =================
+        function updateLastSync(time) {
+            const element = document.getElementById('lastSyncTime');
+            if (element) {
+                element.textContent = time ? formatarData(time) : 'Nunca';
+            }
+        }
+        
+        function updateConfigInfo() {
+            document.getElementById('cardsCount').textContent = appData.cards.length;
+            document.getElementById('accountsCount').textContent = appData.accounts.length;
+            document.getElementById('transactionsCount').textContent = appData.transactions.length;
+            
+            // Calcula tamanho aproximado dos dados
+            const dataSize = JSON.stringify(appData).length;
+            document.getElementById('storageUsed').textContent = formatBytes(dataSize);
+            
+            // Atualiza status
+            document.getElementById('syncStatusText').textContent = useCloudStorage ? 'Conectado' : 'Offline';
+            document.getElementById('syncMode').textContent = useCloudStorage ? 'Nuvem' : 'Local';
+        }
+        
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+        
+        function showError(message) {
+            const errorElement = document.getElementById('loginError');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+        
+        function showLoading(message) {
+            // Implementar spinner ou indicador de carregamento
+            console.log('Carregando:', message);
+        }
+        
+        function hideLoading() {
+            // Ocultar spinner
+        }
+        
+        function showAlert(msg, type) {
+            // Remove alertas anteriores
+            document.querySelectorAll('.alert').forEach(el => el.remove());
+            
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} show`;
+            alert.textContent = msg;
+            document.body.appendChild(alert);
+            
             setTimeout(() => {
-                successDiv.style.display = 'none';
+                if (alert.parentNode) {
+                    alert.style.opacity = '0';
+                    alert.style.transition = 'opacity 0.5s';
+                    setTimeout(() => alert.remove(), 500);
+                }
             }, 3000);
         }
         
-        function formatDate(dateString) {
-            if (!dateString) return 'N/A';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR');
+        // ================= FUNÇÕES DO APP ORIGINAL =================
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'dashboard') updateDashboard();
+            if (tabName === 'historico') displayHistory();
+            if (tabName === 'lancamentos') displayRecentTransactions();
         }
         
-        // =============================================
-        // FUNÇÕES DE CARREGAMENTO DE DADOS
-        // =============================================
-        
-        async function testConnection() {
-            try {
-                if (!window.supabase) {
-                    throw new Error('Supabase não está inicializado');
+        function updateDashboard() {
+            const startDate = new Date(document.getElementById('start-date').value || '2020-01-01');
+            const endDate = new Date(document.getElementById('end-date').value || new Date());
+            
+            let debit = 0, credit = 0, parcel = 0;
+            let paymentData = {}, categoryData = {};
+            
+            appData.transactions.forEach(t => {
+                const tDate = new Date(t.data);
+                if (tDate < startDate || tDate > endDate) return;
+                
+                if (t.tipo === 'debito') {
+                    debit += t.valor;
+                    categoryData[t.categoria] = (categoryData[t.categoria] || 0) + t.valor;
+                } else if (t.tipo === 'credito') {
+                    credit += t.valor;
+                    categoryData[t.categoria] = (categoryData[t.categoria] || 0) + t.valor;
+                } else if (t.tipo === 'conta') {
+                    if (t.numero_parcelas > t.parcela_atual) parcel += t.valor;
+                    categoryData[t.categoria] = (categoryData[t.categoria] || 0) + t.valor;
                 }
-                
-                // Testa conexão consultando uma tabela
-                const { data, error } = await window.supabase
-                    .from('user_paths')
-                    .select('count')
-                    .limit(1);
-                
-                if (error) throw error;
-                
-                showSuccess('Conexão com Supabase testada com sucesso!');
-                document.getElementById('connectionStatus').innerHTML = 
-                    '<span class="status active">Conectado ✓</span>';
-                    
-            } catch (error) {
-                console.error('Erro no teste de conexão:', error);
-                showError('Falha no teste de conexão: ' + error.message);
-            }
+            });
+            
+            let totalLimit = appData.cards.reduce((sum, c) => sum + c.limite_total, 0);
+            let limitUsed = appData.transactions.filter(t => t.tipo === 'conta' && new Date(t.data) <= endDate)
+                .reduce((sum, t) => sum + (t.numero_parcelas >= t.parcela_atual ? t.valor : 0), 0);
+            let availableLimit = totalLimit - limitUsed;
+            
+            let accountBalance = appData.accounts.reduce((sum, acc) => {
+                let balance = acc.saldo_inicial;
+                appData.transactions.filter(t => t.id_conta === acc.id && new Date(t.data) <= endDate).forEach(t => {
+                    if (t.tipo === 'debito') balance -= t.valor;
+                    if (t.tipo === 'conta') balance -= t.valor;
+                    if (t.tipo === 'provento') balance += t.valor;
+                    if (t.tipo === 'ajuste') balance += t.valor;
+                });
+                return sum + balance;
+            }, 0);
+            
+            // FORMATANDO VALORES NO PADRÃO BRASILEIRO
+            document.getElementById('debit-value').textContent = `R$ ${formatarMoeda(debit)}`;
+            document.getElementById('credit-value').textContent = `R$ ${formatarMoeda(credit)}`;
+            document.getElementById('parcel-value').textContent = `R$ ${formatarMoeda(parcel)}`;
+            document.getElementById('limit-value').textContent = `R$ ${formatarMoeda(availableLimit)}`;
+            document.getElementById('balance-value').textContent = `R$ ${formatarMoeda(accountBalance)}`;
+            
+            createCharts(paymentData, categoryData);
+            generateInsights(debit, credit, parcel, totalLimit);
         }
         
-        async function loadUserData() {
-            try {
-                const userDataDiv = document.getElementById('userData');
-                userDataDiv.innerHTML = '<div class="loading">Carregando dados do usuário...</div>';
-                
-                const { data, error } = await window.supabase
-                    .from('user_paths')
-                    .select('*')
-                    .limit(10);
-                
-                if (error) throw error;
-                
-                if (data && data.length > 0) {
-                    let html = '<ul>';
-                    data.forEach(user => {
-                        html += `
-                            <li>
-                                <strong>Email:</strong> ${user.email || 'N/A'}<br>
-                                <strong>Nome:</strong> ${user.full_name || 'N/A'}<br>
-                                <strong>Atualizado:</strong> ${formatDate(user.updated_id)}
-                            </li>
-                            <hr>
-                        `;
-                    });
-                    html += '</ul>';
-                    userDataDiv.innerHTML = html;
-                } else {
-                    userDataDiv.innerHTML = '<p>Nenhum dado de usuário encontrado</p>';
+        function createCharts(paymentData, categoryData) {
+            const paymentCtx = document.getElementById('paymentChart').getContext('2d');
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            
+            if (charts.payment) charts.payment.destroy();
+            charts.payment = new Chart(paymentCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Débito', 'Crédito À Vista', 'Crédito Parcelado'],
+                    datasets: [{
+                        data: [
+                            appData.transactions.filter(t => t.tipo === 'debito').reduce((s, t) => s + t.valor, 0),
+                            appData.transactions.filter(t => t.tipo === 'credito').reduce((s, t) => s + t.valor, 0),
+                            appData.transactions.filter(t => t.tipo === 'conta').reduce((s, t) => s + t.valor, 0)
+                        ],
+                        backgroundColor: ['#e31f1f', '#49ac2a', '#ffafd2']
+                    }]
                 }
-                
-            } catch (error) {
-                console.error('Erro ao carregar dados do usuário:', error);
-                showError('Erro ao carregar dados do usuário: ' + error.message);
-            }
+            });
+            
+            if (charts.category) charts.category.destroy();
+            const sortedCats = Object.entries(categoryData).sort((a, b) => b[1] - a[1]).slice(0, 8);
+            charts.category = new Chart(categoryCtx, {
+                type: 'bar',
+                data: {
+                    labels: sortedCats.map(c => c[0]),
+                    datasets: [{
+                        label: 'Valor (R$)',
+                        data: sortedCats.map(c => c[1]),
+                        backgroundColor: '#49ac2a'
+                    }]
+                },
+                options: { indexAxis: 'y', responsive: true }
+            });
         }
         
-        async function loadFinanceData() {
-            try {
-                const tableBody = document.querySelector('#financeTable tbody');
-                tableBody.innerHTML = '<tr><td colspan="5" class="loading">Carregando transações...</td></tr>';
-                
-                const { data, error } = await window.supabase
-                    .from('finance_paths')
-                    .select('*')
-                    .order('updated_id', { ascending: false })
-                    .limit(20);
-                
-                if (error) throw error;
-                
-                if (data && data.length > 0) {
-                    let html = '';
-                    data.forEach(item => {
-                        html += `
-                            <tr>
-                                <td>${item.id}</td>
-                                <td>${item.accountin || 'N/A'}</td>
-                                <td>${item.cache ? 'Sim' : 'Não'}</td>
-                                <td>R$ ${(item.last_price || 0).toFixed(2)}</td>
-                                <td>${formatDate(item.updated_id)}</td>
-                            </tr>
-                        `;
-                    });
-                    tableBody.innerHTML = html;
-                } else {
-                    tableBody.innerHTML = '<tr><td colspan="5">Nenhuma transação encontrada</td></tr>';
-                }
-                
-            } catch (error) {
-                console.error('Erro ao carregar dados financeiros:', error);
-                showError('Erro ao carregar transações: ' + error.message);
-            }
+        function generateInsights(debit, credit, parcel, totalLimit) {
+            let total = debit + credit + parcel;
+            let fixedPercent = (appData.transactions.filter(t => t.fixo).reduce((s, t) => s + t.valor, 0) / (total || 1)) * 100;
+            let insights = `<div class="insight-box">
+                <strong>📊 Análise Financeira</strong><br>
+                Gastos Fixos: ${fixedPercent.toFixed(0)}% do total
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${Math.min(fixedPercent, 100)}%"></div>
+                </div>
+                ${fixedPercent > 50 ? '<p style="color: var(--color-red);">⚠️ Gastos fixos altos! Revise suas despesas recorrentes.</p>' : ''}
+            </div>`;
+            document.getElementById('insights').innerHTML = insights;
         }
         
-        async function loadBackups() {
-            try {
-                const tableBody = document.querySelector('#backupsTable tbody');
-                tableBody.innerHTML = '<tr><td colspan="4" class="loading">Carregando backups...</td></tr>';
-                
-                const { data, error } = await window.supabase
-                    .from('backlogs')
-                    .select('*')
-                    .order('created_id', { ascending: false })
-                    .limit(10);
-                
-                if (error) throw error;
-                
-                if (data && data.length > 0) {
-                    let html = '';
-                    data.forEach(backup => {
-                        html += `
-                            <tr>
-                                <td>${backup.id}</td>
-                                <td>${backup.backup_name || 'Sem nome'}</td>
-                                <td>${formatDate(backup.created_id)}</td>
-                                <td>
-                                    <button onclick="restoreBackup('${backup.id}')">Restaurar</button>
-                                    <button onclick="deleteBackup('${backup.id}')">Excluir</button>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                    tableBody.innerHTML = html;
-                } else {
-                    tableBody.innerHTML = '<tr><td colspan="4">Nenhum backup encontrado</td></tr>';
-                }
-                
-            } catch (error) {
-                console.error('Erro ao carregar backups:', error);
-                showError('Erro ao carregar backups: ' + error.message);
-            }
+        function displayRecentTransactions() {
+            const recent = appData.transactions.slice(-5).reverse();
+            let html = '<h3 style="margin-bottom: 20px;">📋 Últimas Transações</h3><ul style="list-style: none;">';
+            recent.forEach(t => {
+                const color = t.tipo === 'debito' ? 'var(--color-red)' : t.tipo === 'conta' ? 'var(--color-orange)' : 'var(--color-green)';
+                const icon = t.tipo === 'debito' ? '💸' : t.tipo === 'conta' ? '💳' : '💰';
+                html += `<li style="padding: 10px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between;">
+                    <div><strong>${icon} ${t.descricao}</strong><br><small style="color: var(--text-secondary);">${formatarData(t.data)}</small></div>
+                    <strong style="color: ${color};">R$ ${formatarMoeda(t.valor)}</strong>
+                </li>`;
+            });
+            html += '</ul>';
+            document.getElementById('recent-transactions').innerHTML = html;
         }
         
-        async function createBackup() {
+        function displayHistory() {
+            let html = '';
+            const query = document.getElementById('search-trans').value.toLowerCase();
+            const filtered = appData.transactions.filter(t => t.descricao.toLowerCase().includes(query)).reverse();
+            
+            if (filtered.length === 0) {
+                html += '<td colspan="6" style="text-align: center; padding: 20px;">Nenhuma transação encontrada</td>';
+            } else {
+                filtered.forEach(t => {
+                    const badge = t.tipo === 'debito' ? 'badge-danger' : t.tipo === 'conta' ? 'badge-warning' : 'badge-success';
+                    html += `<tr>
+                        <td>${formatarData(t.data)}</td>
+                        <td><span class="badge ${badge}">${t.tipo}</span></td>
+                        <td>${t.descricao}</td>
+                        <td>${t.categoria}</td>
+                        <td>R$ ${formatarMoeda(t.valor)}</td>
+                        <td><button class="btn btn-danger action-btn" onclick="deleteTransaction(${t.id})">🗑️</button></td>
+                    </tr>`;
+                });
+            }
+            document.getElementById('history-table-body').innerHTML = html;
+        }
+        
+        function updatePaymentMethods() {
+            document.getElementById('debit-account').innerHTML = appData.accounts.map(a => `<option value="${a.id}">${a.instituicao}</option>`).join('');
+            document.getElementById('credit-card').innerHTML = appData.cards.map(c => `<option value="${c.id}">${c.instituicao} (${c.ultimos4})</option>`).join('');
+            document.getElementById('bill-account').innerHTML = appData.accounts.map(a => `<option value="${a.id}">${a.instituicao}</option>`).join('');
+            document.getElementById('income-account').innerHTML = appData.accounts.map(a => `<option value="${a.id}">${a.instituicao}</option>`).join('');
+        }
+        
+        function openCardModal() { 
+            document.getElementById('cardModal').classList.add('show');
+            document.getElementById('card-last4').focus();
+        }
+        
+        function openAccountModal() { 
+            document.getElementById('accountModal').classList.add('show');
+            document.getElementById('account-issuer').focus();
+        }
+        
+        function openDebitModal() { 
+            document.getElementById('debitModal').classList.add('show');
+            document.getElementById('debit-desc').focus();
+        }
+        
+        function openCreditModal() { 
+            document.getElementById('creditModal').classList.add('show');
+            document.getElementById('credit-desc').focus();
+        }
+        
+        function openBillModal() { 
+            document.getElementById('billModal').classList.add('show');
+            document.getElementById('bill-desc').focus();
+        }
+        
+        function openIncomeModal() { 
+            document.getElementById('incomeModal').classList.add('show');
+            document.getElementById('income-desc').focus();
+        }
+        
+        // ================= FUNÇÕES DE SALVAR =================
+        async function saveCard() {
             try {
-                const backupName = prompt('Digite um nome para o backup:', 
-                    `Backup_${new Date().toISOString().slice(0, 10)}`);
-                
-                if (!backupName) return;
-                
-                // Coleta alguns dados para o backup
-                const { data: financeData } = await window.supabase
-                    .from('finance_paths')
-                    .select('*')
-                    .limit(50);
-                
-                const backupData = {
-                    timestamp: new Date().toISOString(),
-                    finance_records: financeData || [],
-                    total_records: financeData ? financeData.length : 0
+                const card = {
+                    id: Date.now(),
+                    ultimos4: document.getElementById('card-last4').value,
+                    instituicao: document.getElementById('card-issuer').value,
+                    bandeira: document.getElementById('card-flag').value,
+                    limite_total: parseMoeda(document.getElementById('card-limit').value),
+                    dia_vencimento: parseInt(document.getElementById('card-due-day').value)
                 };
                 
-                const { error } = await window.supabase
-                    .from('backlogs')
+                appData.cards.push(card);
+                await saveCloudData();
+                displayCards();
+                updatePaymentMethods();
+                document.getElementById('cardForm').reset();
+                
+                document.getElementById('cardModal').classList.remove('show');
+                showAlert('✅ Cartão salvo!', 'success');
+                
+            } catch (error) {
+                showAlert('❌ Erro ao salvar cartão', 'danger');
+            }
+        }
+        
+        async function saveAccount() {
+            try {
+                const account = {
+                    id: Date.now(),
+                    instituicao: document.getElementById('account-issuer').value,
+                    saldo_inicial: parseMoeda(document.getElementById('account-balance').value),
+                    data_saldo_inicial: document.getElementById('account-date').value
+                };
+                
+                appData.accounts.push(account);
+                await saveCloudData();
+                displayAccounts();
+                updatePaymentMethods();
+                document.getElementById('accountForm').reset();
+                
+                document.getElementById('accountModal').classList.remove('show');
+                showAlert('✅ Conta bancária salva!', 'success');
+                
+            } catch (error) {
+                showAlert('❌ Erro ao salvar conta', 'danger');
+            }
+        }
+        
+        async function saveDebit() {
+            try {
+                const trans = {
+                    id: Date.now(),
+                    tipo: 'debito',
+                    descricao: document.getElementById('debit-desc').value,
+                    estabelecimento: document.getElementById('debit-establishment').value,
+                    data: document.getElementById('debit-date').value,
+                    valor: parseMoeda(document.getElementById('debit-value').value),
+                    id_conta: parseInt(document.getElementById('debit-account').value),
+                    categoria: document.getElementById('debit-category').value,
+                    numero_parcelas: 1,
+                    parcela_atual: 1,
+                    fixo: false
+                };
+                
+                appData.transactions.push(trans);
+                await saveCloudData();
+                displayHistory();
+                displayRecentTransactions();
+                updateDashboard();
+                document.getElementById('debitForm').reset();
+                
+                document.getElementById('debitModal').classList.remove('show');
+                showAlert('✅ Débito registrado!', 'success');
+                
+            } catch (error) {
+                showAlert('❌ Erro ao registrar débito', 'danger');
+            }
+        }
+        
+        async function saveCredit() {
+            try {
+                const value = parseMoeda(document.getElementById('credit-value').value);
+                const parcels = parseInt(document.getElementById('credit-parcels').value);
+                const date = new Date(document.getElementById('credit-date').value);
+                const cardId = parseInt(document.getElementById('credit-card').value);
+                const card = appData.cards.find(c => c.id == cardId);
+                const parcelValue = value / parcels;
+                
+                for (let i = 0; i < parcels; i++) {
+                    const parcelDate = new Date(date);
+                    parcelDate.setMonth(parcelDate.getMonth() + i);
+                    
+                    // Calcular vencimento da fatura
+                    let dueDate = new Date(parcelDate);
+                    if (card && card.dia_vencimento) {
+                        dueDate.setDate(parseInt(card.dia_vencimento));
+                        // Se a data de vencimento já passou, ir para o próximo mês
+                        if (dueDate < parcelDate) {
+                            dueDate.setMonth(dueDate.getMonth() + 1);
+                        }
+                    }
+                    
+                    const trans = {
+                        id: Date.now() + i,
+                        tipo: 'conta',
+                        descricao: document.getElementById('credit-desc').value,
+                        estabelecimento: document.getElementById('credit-establishment').value,
+                        data: parcelDate.toISOString().split('T')[0],
+                        valor: parcelValue,
+                        id_cartao: cardId,
+                        categoria: document.getElementById('credit-category').value,
+                        numero_parcelas: parcels,
+                        parcela_atual: i + 1,
+                        data_vencimento_fatura: dueDate.toISOString().split('T')[0],
+                        fixo: false
+                    };
+                    appData.transactions.push(trans);
+                }
+                
+                await saveCloudData();
+                displayHistory();
+                updateDashboard();
+                document.getElementById('creditForm').reset();
+                
+                document.getElementById('creditModal').classList.remove('show');
+                showAlert(`✅ Compra parcelada em ${parcels}x registrada!`, 'success');
+                
+            } catch (error) {
+                showAlert('❌ Erro ao registrar compra', 'danger');
+            }
+        }
+        
+        async function saveBill() {
+            try {
+                const isFixed = document.getElementById('bill-fixed').checked;
+                const months = isFixed ? parseInt(document.getElementById('bill-months').value) : 1;
+                const date = new Date(document.getElementById('bill-date').value);
+                
+                for (let i = 0; i < months; i++) {
+                    const billDate = new Date(date);
+                    billDate.setMonth(billDate.getMonth() + i);
+                    
+                    const trans = {
+                        id: Date.now() + i,
+                        tipo: 'debito',
+                        descricao: document.getElementById('bill-desc').value,
+                        data: billDate.toISOString().split('T')[0],
+                        valor: parseMoeda(document.getElementById('bill-value').value),
+                        id_conta: parseInt(document.getElementById('bill-account').value),
+                        categoria: document.getElementById('bill-category').value,
+                        numero_parcelas: 1,
+                        parcela_atual: 1,
+                        fixo: isFixed,
+                        recorrencia: months,
+                        recorrencia_unidade: 'mes'
+                    };
+                    appData.transactions.push(trans);
+                }
+                
+                await saveCloudData();
+                displayHistory();
+                updateDashboard();
+                document.getElementById('billForm').reset();
+                document.getElementById('bill-fixed').checked = false;
+                document.getElementById('bill-recurrence').style.display = 'none';
+                
+                document.getElementById('billModal').classList.remove('show');
+                showAlert(`✅ Pagamento recorrente registrado por ${months} mês(es)!`, 'success');
+                
+            } catch (error) {
+                showAlert('❌ Erro ao registrar pagamento', 'danger');
+            }
+        }
+        
+        async function saveIncome() {
+            try {
+                const trans = {
+                    id: Date.now(),
+                    tipo: 'provento',
+                    descricao: document.getElementById('income-desc').value,
+                    data: document.getElementById('income-date').value,
+                    valor: parseMoeda(document.getElementById('income-value').value),
+                    id_conta: parseInt(document.getElementById('income-account').value),
+                    categoria: document.getElementById('income-category').value,
+                    observacao: document.getElementById('income-note').value,
+                    numero_parcelas: 1,
+                    parcela_atual: 1,
+                    fixo: false
+                };
+                
+                appData.transactions.push(trans);
+                await saveCloudData();
+                displayHistory();
+                updateDashboard();
+                document.getElementById('incomeForm').reset();
+                
+                document.getElementById('incomeModal').classList.remove('show');
+                showAlert('✅ Receita registrada!', 'success');
+                
+            } catch (error) {
+                showAlert('❌ Erro ao registrar receita', 'danger');
+            }
+        }
+        
+        // ================= FUNÇÕES DE EXCLUSÃO =================
+        async function deleteTransaction(id) {
+            if (confirm('Tem certeza que deseja remover esta transação?')) {
+                appData.transactions = appData.transactions.filter(t => t.id !== id);
+                await saveCloudData();
+                displayHistory();
+                updateDashboard();
+                showAlert('✅ Transação removida!', 'success');
+            }
+        }
+        
+        async function deleteCard(id) {
+            if (confirm('Tem certeza que deseja remover este cartão? As transações associadas também serão removidas.')) {
+                appData.cards = appData.cards.filter(c => c.id !== id);
+                appData.transactions = appData.transactions.filter(t => t.id_cartao !== id);
+                await saveCloudData();
+                displayCards();
+                updateDashboard();
+                showAlert('✅ Cartão removido!', 'success');
+            }
+        }
+        
+        async function deleteAccount(id) {
+            if (confirm('Tem certeza que deseja remover esta conta? As transações associadas também serão removidas.')) {
+                appData.accounts = appData.accounts.filter(a => a.id !== id);
+                appData.transactions = appData.transactions.filter(t => t.id_conta !== id);
+                await saveCloudData();
+                displayAccounts();
+                updatePaymentMethods();
+                updateDashboard();
+                showAlert('✅ Conta removida!', 'success');
+            }
+        }
+        
+        // ================= FUNÇÕES DE EXIBIÇÃO =================
+        function displayCards() {
+            let html = '';
+            appData.cards.forEach(c => {
+                const used = appData.transactions.filter(t => t.id_cartao === c.id && t.numero_parcelas >= t.parcela_atual).reduce((s, t) => s + t.valor, 0);
+                html += `<tr>
+                    <td>${c.ultimos4}</td>
+                    <td>${c.instituicao}</td>
+                    <td>R$ ${formatarMoeda(c.limite_total)}</td>
+                    <td>R$ ${formatarMoeda(used)}</td>
+                    <td>Dia ${c.dia_vencimento}</td>
+                    <td>
+                        <button class="btn btn-danger action-btn" onclick="deleteCard(${c.id})">🗑️</button>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('cards-table-body').innerHTML = html;
+        }
+        
+        function displayAccounts() {
+            let html = '';
+            appData.accounts.forEach(a => {
+                let balance = a.saldo_inicial;
+                appData.transactions.filter(t => t.id_conta === a.id).forEach(t => {
+                    if (t.tipo === 'debito' || t.tipo === 'conta') balance -= t.valor;
+                    if (t.tipo === 'provento') balance += t.valor;
+                    if (t.tipo === 'ajuste') balance += t.valor;
+                });
+                html += `<tr>
+                    <td>${a.instituicao}</td>
+                    <td>R$ ${formatarMoeda(a.saldo_inicial)}</td>
+                    <td>R$ ${formatarMoeda(balance)}</td>
+                    <td>${formatarData(a.data_saldo_inicial)}</td>
+                    <td>
+                        <button class="btn btn-danger action-btn" onclick="deleteAccount(${a.id})">🗑️</button>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('accounts-table-body').innerHTML = html;
+        }
+        
+        // ================= FUNÇÕES DE CSV =================
+        function exportCSV(type) {
+            let data = [];
+            let headers = [];
+            let filename = '';
+            
+            if (type === 'cartoes') {
+                data = appData.cards;
+                headers = ['id', 'ultimos4', 'limite_total', 'instituicao', 'bandeira', 'dia_vencimento'];
+                filename = 'cartoes.csv';
+            } else if (type === 'contas') {
+                data = appData.accounts;
+                headers = ['id', 'instituicao', 'saldo_inicial', 'data_saldo_inicial'];
+                filename = 'contas.csv';
+            } else if (type === 'transacoes') {
+                data = appData.transactions;
+                headers = ['id', 'tipo', 'descricao', 'estabelecimento', 'data', 'valor', 'id_conta', 'id_cartao', 'numero_parcelas', 'parcela_atual', 'data_vencimento_fatura', 'fixo', 'recorrencia', 'recorrencia_unidade', 'observacao', 'categoria'];
+                filename = 'transacoes.csv';
+            }
+            
+            let csv = headers.join(';') + '\n';
+            data.forEach(row => {
+                csv += headers.map(h => row[h] || '').join(';') + '\n';
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+            showAlert(`✅ ${type} exportado com sucesso!`, 'success');
+        }
+        
+        function importCSV() {
+            const fileInput = document.getElementById('file-multi');
+            const files = fileInput.files;
+            
+            if (files.length === 0) {
+                showAlert('❌ Selecione pelo menos um arquivo CSV!', 'danger');
+                return;
+            }
+            
+            const statusDiv = document.getElementById('import-status');
+            statusDiv.innerHTML = `⏳ Processando ${files.length} arquivo(s)...`;
+            
+            let processed = 0;
+            let totalRecords = 0;
+            const results = {};
+            
+            Array.from(files).forEach(file => {
+                readCSV(file, (recordCount) => {
+                    processed++;
+                    totalRecords += recordCount;
+                    results[file.name] = recordCount;
+                    
+                    if (processed === files.length) {
+                        finishImport(results, totalRecords);
+                    }
+                });
+            });
+        }
+        
+        function detectFileType(filename, headers) {
+            const headerStr = headers.join(',').toLowerCase();
+            if (headerStr.includes('ultimos4') || headerStr.includes('dia_vencimento')) return 'cartoes';
+            if (headerStr.includes('saldo_inicial') && !headerStr.includes('id_conta')) return 'contas';
+            if (headerStr.includes('tipo') && headerStr.includes('descricao')) return 'transacoes';
+            if (filename.includes('cartoes')) return 'cartoes';
+            if (filename.includes('conta')) return 'contas';
+            if (filename.includes('transacao')) return 'transacoes';
+            return null;
+        }
+        
+        function readCSV(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csv = e.target.result;
+                const lines = csv.trim().split('\n');
+                let headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+                if (headers.length === 1) {
+                    headers = lines[0].split(';').map(h => h.trim().replace(/^"|"$/g, ''));
+                }
+                
+                const type = detectFileType(file.name, headers);
+                if (!type) {
+                    showAlert(`❌ Arquivo ${file.name} não reconhecido!`, 'danger');
+                    callback(0);
+                    return;
+                }
+                
+                let processedCount = 0;
+                for (let i = 1; i < lines.length; i++) {
+                    if (!lines[i].trim()) continue;
+                    let values = [];
+                    let inQuotes = false;
+                    let current = '';
+                    
+                    for (let j = 0; j < lines[i].length; j++) {
+                        const char = lines[i][j];
+                        if (char === '"') {
+                            inQuotes = !inQuotes;
+                        } else if ((char === ',' || char === ';') && !inQuotes) {
+                            values.push(current.trim().replace(/^"|"$/g, ''));
+                            current = '';
+                        } else {
+                            current += char;
+                        }
+                    }
+                    values.push(current.trim().replace(/^"|"$/g, ''));
+                    
+                    const obj = {};
+                    headers.forEach((h, idx) => obj[h] = values[idx]);
+                    
+                    if (type === 'cartoes') {
+                        appData.cards.push({
+                            id: parseInt(obj.id) || Date.now(),
+                            ultimos4: obj.ultimos4 || '',
+                            limite_total: parseFloat(obj.limite_total) || 0,
+                            instituicao: obj.instituicao || '',
+                            bandeira: obj.bandeira || '',
+                            dia_vencimento: parseInt(obj.dia_vencimento) || 1
+                        });
+                        processedCount++;
+                    } else if (type === 'contas') {
+                        appData.accounts.push({
+                            id: parseInt(obj.id) || Date.now(),
+                            instituicao: obj.instituicao || '',
+                            saldo_inicial: parseFloat(obj.saldo_inicial) || 0,
+                            data_saldo_inicial: obj.data_saldo_inicial || ''
+                        });
+                        processedCount++;
+                    } else if (type === 'transacoes') {
+                        appData.transactions.push({
+                            id: parseInt(obj.id) || Date.now(),
+                            tipo: obj.tipo || 'debito',
+                            descricao: obj.descricao || '',
+                            estabelecimento: obj.estabelecimento || '',
+                            data: obj.data || '',
+                            valor: parseFloat(obj.valor) || 0,
+                            id_conta: obj.id_conta ? parseInt(obj.id_conta) : null,
+                            id_cartao: obj.id_cartao ? parseInt(obj.id_cartao) : null,
+                            numero_parcelas: parseInt(obj.numero_parcelas) || 1,
+                            parcela_atual: parseInt(obj.parcela_atual) || 1,
+                            data_vencimento_fatura: obj.data_vencimento_fatura || '',
+                            fixo: obj.fixo === 'true',
+                            recorrencia: parseInt(obj.recorrencia) || 0,
+                            recorrencia_unidade: obj.recorrencia_unidade || '',
+                            observacao: obj.observacao || '',
+                            categoria: obj.categoria || ''
+                        });
+                        processedCount++;
+                    }
+                }
+                callback(processedCount);
+            };
+            reader.readAsText(file);
+        }
+        
+        async function finishImport(results, totalRecords) {
+            await saveCloudData();
+            displayCards();
+            displayAccounts();
+            displayHistory();
+            updatePaymentMethods();
+            updateDashboard();
+            
+            const statusDiv = document.getElementById('import-status');
+            let statusHtml = '✅ <strong>Importação Concluída!</strong><br>';
+            for (const [filename, count] of Object.entries(results)) {
+                statusHtml += `• ${filename}: ${count} registro(s)<br>`;
+            }
+            statusHtml += `<strong>Total: ${totalRecords} registro(s)</strong>`;
+            statusDiv.innerHTML = statusHtml;
+            
+            document.getElementById('file-multi').value = '';
+            showAlert('✅ Dados importados com sucesso!', 'success');
+        }
+        
+        async function clearData() {
+            if (confirm('⚠️ IRREVERSÍVEL! Isso apagará TODOS os dados. Tem certeza?')) {
+                if (confirm('SEGUNDA CONFIRMAÇÃO: Esta ação não pode ser desfeita!')) {
+                    appData = { cards: [], accounts: [], transactions: [] };
+                    await saveCloudData();
+                    displayCards();
+                    displayAccounts();
+                    displayHistory();
+                    updateDashboard();
+                    showAlert('✅ Todos os dados foram removidos!', 'success');
+                }
+            }
+        }
+        
+        // ================= BACKUP NA NUVEM =================
+        async function createBackup() {
+            if (!useCloudStorage || !currentUser) {
+                showAlert('⚠️ Faça login para criar backup', 'warning');
+                return;
+            }
+            
+            try {
+                const supabase = getSupabase();
+                const backupName = `backup-${new Date().toISOString().split('T')[0]}-${Date.now()}`;
+                
+                const { error } = await supabase
+                    .from('backups')
                     .insert({
+                        user_id: currentUser.id,
                         backup_name: backupName,
-                        data: backupData,
-                        user_id: 1, // ID do usuário atual (ajustar conforme necessário)
-                        created_id: new Date().toISOString()
+                        data: appData
                     });
                 
                 if (error) throw error;
                 
-                showSuccess(`Backup "${backupName}" criado com sucesso!`);
-                loadBackups();
+                showAlert('✅ Backup criado com sucesso', 'success');
                 
             } catch (error) {
                 console.error('Erro ao criar backup:', error);
-                showError('Erro ao criar backup: ' + error.message);
+                showAlert('❌ Erro ao criar backup', 'danger');
             }
         }
         
-        async function addTransaction() {
+        // ================= UTILITÁRIOS =================
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showAlert('📋 Copiado para clipboard!', 'success');
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+        
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
             try {
-                const account = prompt('Nome da conta:');
-                if (!account) return;
-                
-                const price = parseFloat(prompt('Valor:'));
-                if (isNaN(price)) return;
-                
-                const cache = confirm('Armazenar em cache?');
-                
-                const { error } = await window.supabase
-                    .from('finance_paths')
-                    .insert({
-                        accountin: account,
-                        last_price: price,
-                        cache: cache,
-                        user_id: 1, // ID do usuário atual
-                        updated_id: new Date().toISOString(),
-                        emailed_id: null
-                    });
-                
-                if (error) throw error;
-                
-                showSuccess('Transação adicionada com sucesso!');
-                loadFinanceData();
-                
-            } catch (error) {
-                console.error('Erro ao adicionar transação:', error);
-                showError('Erro ao adicionar transação: ' + error.message);
+                document.execCommand('copy');
+                showAlert('📋 Copiado para clipboard!', 'success');
+            } catch (err) {
+                showAlert('❌ Erro ao copiar!', 'danger');
             }
+            document.body.removeChild(textarea);
         }
         
-        async function restoreBackup(backupId) {
-            if (!confirm('Tem certeza que deseja restaurar este backup?')) return;
+        // ================= INICIALIZAÇÃO DO APP =================
+        async function initApp() {
+            // Inicializa Supabase apenas uma vez
+            const supabaseReady = await initSupabase();
             
-            try {
-                const { data, error } = await window.supabase
-                    .from('backlogs')
-                    .select('*')
-                    .eq('id', backupId)
-                    .single();
-                
-                if (error) throw error;
-                
-                alert(`Backup "${data.backup_name}" restaurado com sucesso!\n\nDados: ${JSON.stringify(data.data, null, 2)}`);
-                showSuccess(`Backup "${data.backup_name}" restaurado`);
-                
-            } catch (error) {
-                console.error('Erro ao restaurar backup:', error);
-                showError('Erro ao restaurar backup: ' + error.message);
+            if (!supabaseReady) {
+                useOfflineMode();
+                return;
             }
+            
+            // Verifica conexão
+            isOnline = navigator.onLine;
+            window.addEventListener('online', () => {
+                isOnline = true;
+                updateSyncStatus(useCloudStorage);
+                if (useCloudStorage) forceSync();
+            });
+            
+            window.addEventListener('offline', () => {
+                isOnline = false;
+                updateSyncStatus(false);
+            });
+            
+            // Verifica autenticação
+            await checkAuth();
+            
+            // Inicializa máscaras de moeda
+            document.querySelectorAll('.currency-input').forEach(input => {
+                input.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    value = (parseInt(value) / 100).toFixed(2);
+                    value = value.replace('.', ',');
+                    value = value.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+                    e.target.value = value;
+                });
+            });
+            
+            // Configura data atual nos inputs
+            const today = new Date().toISOString().split('T')[0];
+            document.querySelectorAll('input[type="date"]:not([id*="start-date"]):not([id*="end-date"])').forEach(input => {
+                if (!input.value) input.value = today;
+            });
+            
+            // Configura listeners
+            document.getElementById('bill-fixed').addEventListener('change', function() {
+                document.getElementById('bill-recurrence').style.display = this.checked ? 'block' : 'none';
+            });
+            
+            document.getElementById('search-trans').addEventListener('input', displayHistory);
+            
+            window.onclick = function(e) {
+                if (e.target.classList.contains('modal')) {
+                    e.target.classList.remove('show');
+                }
+            };
+            
+            // Atualiza informações iniciais
+            updateConfigInfo();
         }
         
-        async function deleteBackup(backupId) {
-            if (!confirm('Tem certeza que deseja excluir este backup permanentemente?')) return;
-            
-            try {
-                const { error } = await window.supabase
-                    .from('backlogs')
-                    .delete()
-                    .eq('id', backupId);
-                
-                if (error) throw error;
-                
-                showSuccess('Backup excluído com sucesso!');
-                loadBackups();
-                
-            } catch (error) {
-                console.error('Erro ao excluir backup:', error);
-                showError('Erro ao excluir backup: ' + error.message);
-            }
-        }
-        
-        // =============================================
-        // INICIALIZAÇÃO DA PÁGINA
-        // =============================================
-        
-        // Carrega todos os dados quando a página é aberta
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Página carregada. Inicializando dados...');
-            
-            // Aguarda um breve momento para garantir que o Supabase esteja carregado
-            setTimeout(() => {
-                loadUserData();
-                loadFinanceData();
-                loadBackups();
-            }, 1000);
-        });
-        
-        // Tratamento do erro do adsbygoogle (se aplicável)
-        window.addEventListener('error', function(e) {
-            if (e.message && e.message.includes('adsbygoogle')) {
-                console.log('Anúncio bloqueado - pode ser ignorado');
-                e.preventDefault();
-            }
-        });
+        // ================= INICIALIZAÇÃO =================
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
