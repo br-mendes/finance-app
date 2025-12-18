@@ -3,879 +3,479 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Financeiro - Dashboard</title>
+    <title>Sistema Financeiro</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            margin: 0;
             padding: 20px;
-            color: #333;
+            background-color: #f5f5f5;
         }
-        
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-        }
-        
-        header {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            color: white;
-            padding: 25px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .logo {
-            font-size: 28px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .logo-icon {
-            font-size: 32px;
-        }
-        
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .avatar {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
             background: white;
-            color: #4f46e5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        
-        .main-content {
-            display: grid;
-            grid-template-columns: 250px 1fr;
-            min-height: 600px;
+        h1 {
+            color: #333;
         }
-        
-        .sidebar {
-            background: #f8fafc;
-            border-right: 1px solid #e2e8f0;
-            padding: 25px 0;
-        }
-        
-        .nav-item {
-            padding: 15px 25px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border-left: 4px solid transparent;
-            color: #64748b;
-        }
-        
-        .nav-item:hover {
-            background: #f1f5f9;
-            color: #4f46e5;
-        }
-        
-        .nav-item.active {
-            background: #eef2ff;
-            color: #4f46e5;
-            border-left-color: #4f46e5;
-        }
-        
-        .nav-icon {
-            font-size: 20px;
-        }
-        
-        .content {
-            padding: 30px;
-        }
-        
-        .page-title {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: #1e293b;
-        }
-        
-        .page-subtitle {
-            color: #64748b;
-            margin-bottom: 30px;
-        }
-        
-        .dashboard-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
-        }
-        
         .card {
-            background: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e2e8f0;
-            transition: transform 0.3s;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
         }
-        
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .card-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #475569;
-        }
-        
-        .card-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 10px;
-        }
-        
-        .card-change {
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .positive {
-            color: #10b981;
-        }
-        
-        .negative {
-            color: #ef4444;
-        }
-        
-        .data-table {
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            margin-bottom: 30px;
-        }
-        
         table {
             width: 100%;
             border-collapse: collapse;
+            margin: 20px 0;
         }
-        
-        th {
-            background: #f8fafc;
-            padding: 18px 20px;
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
             text-align: left;
-            font-weight: 600;
-            color: #475569;
-            border-bottom: 2px solid #e2e8f0;
         }
-        
-        td {
-            padding: 18px 20px;
-            border-bottom: 1px solid #e2e8f0;
+        th {
+            background-color: #f2f2f2;
         }
-        
-        tr:last-child td {
-            border-bottom: none;
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
         }
-        
-        .status-badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
+        .active {
+            background: #d4edda;
+            color: #155724;
         }
-        
-        .status-active {
-            background: #d1fae5;
-            color: #065f46;
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
         }
-        
-        .status-pending {
-            background: #fef3c7;
-            color: #92400e;
-        }
-        
-        .actions {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .btn-primary {
-            background: #4f46e5;
+        button {
+            background: #007bff;
             color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
         }
-        
-        .btn-primary:hover {
-            background: #4338ca;
+        button:hover {
+            background: #0056b3;
         }
-        
-        .btn-secondary {
-            background: #f1f5f9;
-            color: #475569;
-        }
-        
-        .btn-secondary:hover {
-            background: #e2e8f0;
-        }
-        
-        .btn-small {
-            padding: 6px 12px;
-            font-size: 14px;
-        }
-        
-        .footer {
-            text-align: center;
-            padding: 20px;
-            color: #64748b;
-            border-top: 1px solid #e2e8f0;
-            font-size: 14px;
-        }
-        
-        .error-message {
-            background: #fee2e2;
-            color: #991b1b;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        
-        .success-message {
-            background: #d1fae5;
-            color: #065f46;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        
         .loading {
             text-align: center;
-            padding: 30px;
-            color: #64748b;
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        @media (max-width: 768px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-            
-            .sidebar {
-                display: none;
-            }
-            
-            .dashboard-cards {
-                grid-template-columns: 1fr;
-            }
-            
-            header {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
-            }
+            padding: 20px;
+            color: #666;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <div class="logo">
-                <span class="logo-icon">💰</span>
-                <span>Sistema Financeiro</span>
-            </div>
-            <div class="user-info">
-                <div class="avatar">JS</div>
-                <div>
-                    <div class="user-name">João Silva</div>
-                    <div class="user-email">joao@exemplo.com</div>
-                </div>
-            </div>
-        </header>
+        <h1>Sistema Financeiro</h1>
         
-        <div class="main-content">
-            <nav class="sidebar">
-                <div class="nav-item active" data-page="dashboard">
-                    <span class="nav-icon">📊</span>
-                    <span>Dashboard</span>
-                </div>
-                <div class="nav-item" data-page="finance">
-                    <span class="nav-icon">💳</span>
-                    <span>Finanças</span>
-                </div>
-                <div class="nav-item" data-page="transactions">
-                    <span class="nav-icon">📋</span>
-                    <span>Transações</span>
-                </div>
-                <div class="nav-item" data-page="backups">
-                    <span class="nav-icon">💾</span>
-                    <span>Backups</span>
-                </div>
-                <div class="nav-item" data-page="settings">
-                    <span class="nav-icon">⚙️</span>
-                    <span>Configurações</span>
-                </div>
-            </nav>
-            
-            <main class="content">
-                <!-- Mensagens de status -->
-                <div class="error-message" id="errorMessage">
-                    <strong>Erro:</strong> <span id="errorText"></span>
-                </div>
-                
-                <div class="success-message" id="successMessage">
-                    <strong>Sucesso:</strong> <span id="successText"></span>
-                </div>
-                
-                <!-- Página do Dashboard -->
-                <div id="dashboardPage" class="page">
-                    <h1 class="page-title">Dashboard Financeiro</h1>
-                    <p class="page-subtitle">Visão geral das suas finanças e atividades recentes</p>
-                    
-                    <div class="dashboard-cards">
-                        <div class="card">
-                            <div class="card-header">
-                                <h3 class="card-title">Saldo Total</h3>
-                                <span class="nav-icon">💰</span>
-                            </div>
-                            <div class="card-value" id="totalBalance">R$ 0,00</div>
-                            <div class="card-change positive">
-                                <span>↑</span>
-                                <span>+5.2% este mês</span>
-                            </div>
-                        </div>
-                        
-                        <div class="card">
-                            <div class="card-header">
-                                <h3 class="card-title">Transações (30 dias)</h3>
-                                <span class="nav-icon">📊</span>
-                            </div>
-                            <div class="card-value" id="transactionCount">0</div>
-                            <div class="card-change negative">
-                                <span>↓</span>
-                                <span>-2.1% vs mês anterior</span>
-                            </div>
-                        </div>
-                        
-                        <div class="card">
-                            <div class="card-header">
-                                <h3 class="card-title">Último Backup</h3>
-                                <span class="nav-icon">💾</span>
-                            </div>
-                            <div class="card-value" id="lastBackup">Nenhum</div>
-                            <div class="card-change positive">
-                                <span>✓</span>
-                                <span>Sistema operacional</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="data-table">
-                        <h3 style="padding: 20px 20px 10px;">Atividade Recente</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Descrição</th>
-                                    <th>Data</th>
-                                    <th>Valor</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recentActivity">
-                                <tr>
-                                    <td colspan="4" class="loading">Carregando atividades...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- Página de Finanças -->
-                <div id="financePage" class="page hidden">
-                    <h1 class="page-title">Gestão Financeira</h1>
-                    <p class="page-subtitle">Gerencie suas contas e finanças pessoais</p>
-                    
-                    <div style="margin-bottom: 25px;">
-                        <button class="btn btn-primary" id="refreshFinances">
-                            <span>↻</span>
-                            <span>Atualizar Dados</span>
-                        </button>
-                    </div>
-                    
-                    <div class="data-table">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Conta</th>
-                                    <th>Cache</th>
-                                    <th>Último Preço</th>
-                                    <th>Atualizado em</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="financeData">
-                                <tr>
-                                    <td colspan="5" class="loading">Carregando dados financeiros...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- Página de Backups -->
-                <div id="backupsPage" class="page hidden">
-                    <h1 class="page-title">Gestão de Backups</h1>
-                    <p class="page-subtitle">Crie e restaure backups dos seus dados</p>
-                    
-                    <div style="margin-bottom: 25px; display: flex; gap: 15px;">
-                        <button class="btn btn-primary" id="createBackupBtn">
-                            <span>💾</span>
-                            <span>Criar Novo Backup</span>
-                        </button>
-                        <button class="btn btn-secondary" id="refreshBackups">
-                            <span>↻</span>
-                            <span>Atualizar Lista</span>
-                        </button>
-                    </div>
-                    
-                    <div class="data-table">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Nome do Backup</th>
-                                    <th>Data de Criação</th>
-                                    <th>Tamanho</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="backupsData">
-                                <tr>
-                                    <td colspan="4" class="loading">Carregando backups...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- Página de Configurações -->
-                <div id="settingsPage" class="page hidden">
-                    <h1 class="page-title">Configurações do Sistema</h1>
-                    <p class="page-subtitle">Configure suas preferências e integrações</p>
-                    
-                    <div class="card" style="margin-bottom: 25px;">
-                        <h3 class="card-title" style="margin-bottom: 20px;">Configurações do Supabase</h3>
-                        
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Status da Conexão:</label>
-                            <span id="connectionStatus" class="status-badge status-pending">Verificando...</span>
-                        </div>
-                        
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Tabelas Disponíveis:</label>
-                            <div id="tablesList" style="color: #64748b;">Verificando...</div>
-                        </div>
-                        
-                        <div>
-                            <button class="btn btn-secondary" id="testConnectionBtn">
-                                <span>🔧</span>
-                                <span>Testar Conexão</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </main>
+        <div id="errorMessage" class="error"></div>
+        <div id="successMessage" class="error" style="background: #d4edda; color: #155724; display: none;"></div>
+        
+        <div class="card">
+            <h2>Status do Sistema</h2>
+            <p><strong>Conexão Supabase:</strong> <span id="connectionStatus">Verificando...</span></p>
+            <button onclick="testConnection()">Testar Conexão</button>
         </div>
         
-        <div class="footer">
-            <p>Sistema Financeiro v1.0 | Conectado ao Supabase | © 2023 Todos os direitos reservados</p>
-            <p id="connectionInfo" style="font-size: 12px; margin-top: 5px;"></p>
+        <div class="card">
+            <h2>Dados do Usuário</h2>
+            <div id="userData" class="loading">Carregando dados do usuário...</div>
+            <button onclick="loadUserData()">Recarregar</button>
+        </div>
+        
+        <div class="card">
+            <h2>Transações Financeiras</h2>
+            <table id="financeTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Conta</th>
+                        <th>Cache</th>
+                        <th>Último Preço</th>
+                        <th>Atualizado em</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="5" class="loading">Carregando transações...</td></tr>
+                </tbody>
+            </table>
+            <button onclick="loadFinanceData()">Atualizar Dados</button>
+            <button onclick="addTransaction()">Nova Transação</button>
+        </div>
+        
+        <div class="card">
+            <h2>Backups</h2>
+            <table id="backupsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Criado em</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="4" class="loading">Carregando backups...</td></tr>
+                </tbody>
+            </table>
+            <button onclick="loadBackups()">Recarregar Backups</button>
+            <button onclick="createBackup()">Criar Backup</button>
         </div>
     </div>
 
-    <!-- Biblioteca do Supabase (incluída apenas uma vez) -->
+    <!-- Biblioteca Supabase (incluída apenas UMA vez) -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
-    <!-- Configuração do Supabase -->
     <script>
-        // Configuração única do Supabase para evitar declaração duplicada
-        (function() {
-            // Verifica se já existe uma instância global
-            if (window.supabase && window.supabaseInitialized) {
-                console.log('Supabase já inicializado, usando instância existente');
-                return;
-            }
-            
-            // Configurações do seu projeto Supabase
-            const SUPABASE_URL = 'https://lebfczoywiqkczppwuwg.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlYmZjem95d2lxa2N6cHB3dXdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDI0NzQzMjMsImV4cCI6MjAxODA1MDMyM30.7R7kP6xTz4vGZ8n9Q7Xw2q3p1oQdY9X8lL6N2J3r1oU';
-            
+        // =============================================
+        // CONFIGURAÇÃO ÚNICA DO SUPABASE
+        // =============================================
+        
+        // Verifica se o Supabase já foi inicializado globalmente
+        if (window.supabase && window.supabaseClient) {
+            console.log('Supabase já foi inicializado anteriormente');
+        } else {
             try {
-                // Cria a instância do Supabase
-                window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                window.supabaseInitialized = true;
-                console.log('Supabase inicializado com sucesso');
+                // Inicializa o Supabase UMA única vez
+                const supabaseUrl = 'https://lebfczoywiqkczppwuwg.supabase.co';
+                const supabaseKey = 'SUA_CHAVE_ANON_AQUI'; // Substitua pela sua chave
                 
-                // Atualiza informações de conexão
-                document.getElementById('connectionInfo').textContent = 
-                    `Conectado a: ${SUPABASE_URL.replace('https://', '').split('.')[0]}`;
+                window.supabase = supabase.createClient(supabaseUrl, supabaseKey);
+                window.supabaseClient = window.supabase; // Backup para referência
+                
+                console.log('Supabase inicializado com sucesso');
+                showSuccess('Conexão com Supabase estabelecida');
+                
+                // Atualiza status de conexão
+                document.getElementById('connectionStatus').innerHTML = 
+                    '<span class="status active">Conectado</span>';
+                    
             } catch (error) {
                 console.error('Erro ao inicializar Supabase:', error);
-                showError('Não foi possível conectar ao banco de dados: ' + error.message);
+                showError('Falha ao conectar com Supabase: ' + error.message);
+                document.getElementById('connectionStatus').innerHTML = 
+                    '<span style="color: red;">Erro de conexão</span>';
             }
-        })();
+        }
         
-        // Funções de utilidade
+        // =============================================
+        // FUNÇÕES DE UTILIDADE
+        // =============================================
+        
         function showError(message) {
-            document.getElementById('errorText').textContent = message;
-            document.getElementById('errorMessage').style.display = 'block';
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
             
+            // Oculta após 5 segundos
             setTimeout(() => {
-                document.getElementById('errorMessage').style.display = 'none';
+                errorDiv.style.display = 'none';
             }, 5000);
         }
         
         function showSuccess(message) {
-            document.getElementById('successText').textContent = message;
-            document.getElementById('successMessage').style.display = 'block';
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
             
+            // Oculta após 3 segundos
             setTimeout(() => {
-                document.getElementById('successMessage').style.display = 'none';
+                successDiv.style.display = 'none';
             }, 3000);
         }
         
-        function formatCurrency(value) {
-            return new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-            }).format(value);
-        }
-        
         function formatDate(dateString) {
+            if (!dateString) return 'N/A';
             const date = new Date(dateString);
-            return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR').substring(0, 5);
+            return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR');
         }
         
-        // Navegação entre páginas
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', function() {
-                // Remove classe active de todos os itens
-                document.querySelectorAll('.nav-item').forEach(nav => {
-                    nav.classList.remove('active');
-                });
-                
-                // Adiciona classe active ao item clicado
-                this.classList.add('active');
-                
-                // Esconde todas as páginas
-                document.querySelectorAll('.page').forEach(page => {
-                    page.classList.add('hidden');
-                });
-                
-                // Mostra a página correspondente
-                const pageId = this.getAttribute('data-page') + 'Page';
-                document.getElementById(pageId).classList.remove('hidden');
-                
-                // Carrega dados específicos da página
-                if (pageId === 'dashboardPage') {
-                    loadDashboardData();
-                } else if (pageId === 'financePage') {
-                    loadFinanceData();
-                } else if (pageId === 'backupsPage') {
-                    loadBackupsData();
-                } else if (pageId === 'settingsPage') {
-                    loadSettingsData();
-                }
-            });
-        });
+        // =============================================
+        // FUNÇÕES DE CARREGAMENTO DE DADOS
+        // =============================================
         
-        // Funções para carregar dados
-        async function loadDashboardData() {
+        async function testConnection() {
             try {
-                // Simula carregamento de dados do dashboard
-                document.getElementById('totalBalance').textContent = formatCurrency(15287.65);
-                document.getElementById('transactionCount').textContent = '142';
-                document.getElementById('lastBackup').textContent = 'Hoje, 14:30';
-                
-                // Carrega atividades recentes
-                const { data, error } = await window.supabase
-                    .from('finance_paths')
-                    .select('*')
-                    .order('updated_id', { ascending: false })
-                    .limit(5);
-                
-                if (error) throw error;
-                
-                const activityTable = document.getElementById('recentActivity');
-                activityTable.innerHTML = '';
-                
-                if (data && data.length > 0) {
-                    data.forEach(item => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>Atualização de ${item.accountin || 'conta'}</td>
-                            <td>${formatDate(item.updated_id)}</td>
-                            <td>${formatCurrency(item.last_price || 0)}</td>
-                            <td><span class="status-badge status-active">Ativo</span></td>
-                        `;
-                        activityTable.appendChild(row);
-                    });
-                } else {
-                    activityTable.innerHTML = `
-                        <tr>
-                            <td colspan="4" style="text-align: center; color: #64748b;">
-                                Nenhuma atividade recente encontrada
-                            </td>
-                        </tr>
-                    `;
+                if (!window.supabase) {
+                    throw new Error('Supabase não está inicializado');
                 }
-            } catch (error) {
-                console.error('Erro ao carregar dados do dashboard:', error);
-                showError('Erro ao carregar dados do dashboard');
-            }
-        }
-        
-        async function loadFinanceData() {
-            try {
-                const { data, error } = await window.supabase
-                    .from('finance_paths')
-                    .select('*')
-                    .order('updated_id', { ascending: false });
                 
-                if (error) throw error;
-                
-                const financeTable = document.getElementById('financeData');
-                financeTable.innerHTML = '';
-                
-                if (data && data.length > 0) {
-                    data.forEach(item => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${item.accountin || 'Conta não nomeada'}</td>
-                            <td>${item.cache ? 'Sim' : 'Não'}</td>
-                            <td>${formatCurrency(item.last_price || 0)}</td>
-                            <td>${formatDate(item.updated_id)}</td>
-                            <td class="actions">
-                                <button class="btn btn-secondary btn-small" onclick="editFinanceItem('${item.id}')">Editar</button>
-                                <button class="btn btn-secondary btn-small" onclick="deleteFinanceItem('${item.id}')">Excluir</button>
-                            </td>
-                        `;
-                        financeTable.appendChild(row);
-                    });
-                } else {
-                    financeTable.innerHTML = `
-                        <tr>
-                            <td colspan="5" style="text-align: center; color: #64748b;">
-                                Nenhum dado financeiro encontrado
-                            </td>
-                        </tr>
-                    `;
-                }
-            } catch (error) {
-                console.error('Erro ao carregar dados financeiros:', error);
-                showError('Erro ao carregar dados financeiros');
-            }
-        }
-        
-        async function loadBackupsData() {
-            try {
-                const { data, error } = await window.supabase
-                    .from('backlogs')
-                    .select('*')
-                    .order('created_id', { ascending: false });
-                
-                if (error) throw error;
-                
-                const backupsTable = document.getElementById('backupsData');
-                backupsTable.innerHTML = '';
-                
-                if (data && data.length > 0) {
-                    data.forEach(item => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${item.backup_name}</td>
-                            <td>${formatDate(item.created_id)}</td>
-                            <td>${item.data ? Math.ceil(JSON.stringify(item.data).length / 1024) + ' KB' : 'N/A'}</td>
-                            <td class="actions">
-                                <button class="btn btn-secondary btn-small" onclick="restoreBackup('${item.id}')">Restaurar</button>
-                                <button class="btn btn-secondary btn-small" onclick="deleteBackup('${item.id}')">Excluir</button>
-                            </td>
-                        `;
-                        backupsTable.appendChild(row);
-                    });
-                } else {
-                    backupsTable.innerHTML = `
-                        <tr>
-                            <td colspan="4" style="text-align: center; color: #64748b;">
-                                Nenhum backup encontrado
-                            </td>
-                        </tr>
-                    `;
-                }
-            } catch (error) {
-                console.error('Erro ao carregar backups:', error);
-                showError('Erro ao carregar backups');
-            }
-        }
-        
-        async function loadSettingsData() {
-            try {
-                // Testa a conexão com o Supabase
+                // Testa conexão consultando uma tabela
                 const { data, error } = await window.supabase
                     .from('user_paths')
                     .select('count')
                     .limit(1);
                 
-                const statusElement = document.getElementById('connectionStatus');
+                if (error) throw error;
                 
-                if (error) {
-                    statusElement.textContent = 'Erro de conexão';
-                    statusElement.className = 'status-badge';
-                    statusElement.style.background = '#fee2e2';
-                    statusElement.style.color = '#991b1b';
-                } else {
-                    statusElement.textContent = 'Conectado';
-                    statusElement.className = 'status-badge status-active';
-                }
-                
-                // Lista tabelas disponíveis
-                const tables = ['user_paths', 'finance_paths', 'backlogs'];
-                document.getElementById('tablesList').textContent = tables.join(', ');
-                
+                showSuccess('Conexão com Supabase testada com sucesso!');
+                document.getElementById('connectionStatus').innerHTML = 
+                    '<span class="status active">Conectado ✓</span>';
+                    
             } catch (error) {
-                console.error('Erro ao carregar configurações:', error);
-                showError('Erro ao testar conexão com o banco de dados');
+                console.error('Erro no teste de conexão:', error);
+                showError('Falha no teste de conexão: ' + error.message);
             }
         }
         
-        // Funções de ação
-        document.getElementById('refreshFinances')?.addEventListener('click', loadFinanceData);
-        document.getElementById('refreshBackups')?.addEventListener('click', loadBackupsData);
-        document.getElementById('testConnectionBtn')?.addEventListener('click', loadSettingsData);
-        
-        document.getElementById('createBackupBtn')?.addEventListener('click', async function() {
+        async function loadUserData() {
             try {
-                const backupName = prompt('Digite um nome para o backup:', `Backup_${new Date().toLocaleDateString('pt-BR')}`);
+                const userDataDiv = document.getElementById('userData');
+                userDataDiv.innerHTML = '<div class="loading">Carregando dados do usuário...</div>';
+                
+                const { data, error } = await window.supabase
+                    .from('user_paths')
+                    .select('*')
+                    .limit(10);
+                
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    let html = '<ul>';
+                    data.forEach(user => {
+                        html += `
+                            <li>
+                                <strong>Email:</strong> ${user.email || 'N/A'}<br>
+                                <strong>Nome:</strong> ${user.full_name || 'N/A'}<br>
+                                <strong>Atualizado:</strong> ${formatDate(user.updated_id)}
+                            </li>
+                            <hr>
+                        `;
+                    });
+                    html += '</ul>';
+                    userDataDiv.innerHTML = html;
+                } else {
+                    userDataDiv.innerHTML = '<p>Nenhum dado de usuário encontrado</p>';
+                }
+                
+            } catch (error) {
+                console.error('Erro ao carregar dados do usuário:', error);
+                showError('Erro ao carregar dados do usuário: ' + error.message);
+            }
+        }
+        
+        async function loadFinanceData() {
+            try {
+                const tableBody = document.querySelector('#financeTable tbody');
+                tableBody.innerHTML = '<tr><td colspan="5" class="loading">Carregando transações...</td></tr>';
+                
+                const { data, error } = await window.supabase
+                    .from('finance_paths')
+                    .select('*')
+                    .order('updated_id', { ascending: false })
+                    .limit(20);
+                
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    let html = '';
+                    data.forEach(item => {
+                        html += `
+                            <tr>
+                                <td>${item.id}</td>
+                                <td>${item.accountin || 'N/A'}</td>
+                                <td>${item.cache ? 'Sim' : 'Não'}</td>
+                                <td>R$ ${(item.last_price || 0).toFixed(2)}</td>
+                                <td>${formatDate(item.updated_id)}</td>
+                            </tr>
+                        `;
+                    });
+                    tableBody.innerHTML = html;
+                } else {
+                    tableBody.innerHTML = '<tr><td colspan="5">Nenhuma transação encontrada</td></tr>';
+                }
+                
+            } catch (error) {
+                console.error('Erro ao carregar dados financeiros:', error);
+                showError('Erro ao carregar transações: ' + error.message);
+            }
+        }
+        
+        async function loadBackups() {
+            try {
+                const tableBody = document.querySelector('#backupsTable tbody');
+                tableBody.innerHTML = '<tr><td colspan="4" class="loading">Carregando backups...</td></tr>';
+                
+                const { data, error } = await window.supabase
+                    .from('backlogs')
+                    .select('*')
+                    .order('created_id', { ascending: false })
+                    .limit(10);
+                
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    let html = '';
+                    data.forEach(backup => {
+                        html += `
+                            <tr>
+                                <td>${backup.id}</td>
+                                <td>${backup.backup_name || 'Sem nome'}</td>
+                                <td>${formatDate(backup.created_id)}</td>
+                                <td>
+                                    <button onclick="restoreBackup('${backup.id}')">Restaurar</button>
+                                    <button onclick="deleteBackup('${backup.id}')">Excluir</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    tableBody.innerHTML = html;
+                } else {
+                    tableBody.innerHTML = '<tr><td colspan="4">Nenhum backup encontrado</td></tr>';
+                }
+                
+            } catch (error) {
+                console.error('Erro ao carregar backups:', error);
+                showError('Erro ao carregar backups: ' + error.message);
+            }
+        }
+        
+        async function createBackup() {
+            try {
+                const backupName = prompt('Digite um nome para o backup:', 
+                    `Backup_${new Date().toISOString().slice(0, 10)}`);
                 
                 if (!backupName) return;
                 
-                // Coleta dados para backup
+                // Coleta alguns dados para o backup
                 const { data: financeData } = await window.supabase
                     .from('finance_paths')
-                    .select('*');
+                    .select('*')
+                    .limit(50);
                 
                 const backupData = {
-                    finance_paths: financeData || [],
-                    created_at: new Date().toISOString(),
-                    user: 'João Silva'
+                    timestamp: new Date().toISOString(),
+                    finance_records: financeData || [],
+                    total_records: financeData ? financeData.length : 0
                 };
                 
-                // Cria o backup no banco de dados
                 const { error } = await window.supabase
                     .from('backlogs')
                     .insert({
                         backup_name: backupName,
                         data: backupData,
-                        user_id: 1,
+                        user_id: 1, // ID do usuário atual (ajustar conforme necessário)
                         created_id: new Date().toISOString()
                     });
                 
                 if (error) throw error;
                 
                 showSuccess(`Backup "${backupName}" criado com sucesso!`);
-                loadBackupsData();
+                loadBackups();
                 
             } catch (error) {
                 console.error('Erro ao criar backup:', error);
                 showError('Erro ao criar backup: ' + error.message);
             }
-        });
+        }
         
-        // Funções auxiliares
-        window.editFinanceItem = function(id) {
-            alert(`Editar item financeiro ID: ${id}\nEsta funcionalidade está em desenvolvimento.`);
-        };
-        
-        window.deleteFinanceItem = function(id) {
-            if (confirm('Tem certeza que deseja excluir este item financeiro?')) {
-                alert(`Excluir item financeiro ID: ${id}\nEsta funcionalidade está em desenvolvimento.`);
+        async function addTransaction() {
+            try {
+                const account = prompt('Nome da conta:');
+                if (!account) return;
+                
+                const price = parseFloat(prompt('Valor:'));
+                if (isNaN(price)) return;
+                
+                const cache = confirm('Armazenar em cache?');
+                
+                const { error } = await window.supabase
+                    .from('finance_paths')
+                    .insert({
+                        accountin: account,
+                        last_price: price,
+                        cache: cache,
+                        user_id: 1, // ID do usuário atual
+                        updated_id: new Date().toISOString(),
+                        emailed_id: null
+                    });
+                
+                if (error) throw error;
+                
+                showSuccess('Transação adicionada com sucesso!');
+                loadFinanceData();
+                
+            } catch (error) {
+                console.error('Erro ao adicionar transação:', error);
+                showError('Erro ao adicionar transação: ' + error.message);
             }
-        };
+        }
         
-        window.restoreBackup = function(id) {
-            if (confirm('Tem certeza que deseja restaurar este backup?\nOs dados atuais serão substituídos.')) {
-                alert(`Restaurar backup ID: ${id}\nEsta funcionalidade está em desenvolvimento.`);
+        async function restoreBackup(backupId) {
+            if (!confirm('Tem certeza que deseja restaurar este backup?')) return;
+            
+            try {
+                const { data, error } = await window.supabase
+                    .from('backlogs')
+                    .select('*')
+                    .eq('id', backupId)
+                    .single();
+                
+                if (error) throw error;
+                
+                alert(`Backup "${data.backup_name}" restaurado com sucesso!\n\nDados: ${JSON.stringify(data.data, null, 2)}`);
+                showSuccess(`Backup "${data.backup_name}" restaurado`);
+                
+            } catch (error) {
+                console.error('Erro ao restaurar backup:', error);
+                showError('Erro ao restaurar backup: ' + error.message);
             }
-        };
+        }
         
-        window.deleteBackup = function(id) {
-            if (confirm('Tem certeza que deseja excluir este backup?')) {
-                alert(`Excluir backup ID: ${id}\nEsta funcionalidade está em desenvolvimento.`);
+        async function deleteBackup(backupId) {
+            if (!confirm('Tem certeza que deseja excluir este backup permanentemente?')) return;
+            
+            try {
+                const { error } = await window.supabase
+                    .from('backlogs')
+                    .delete()
+                    .eq('id', backupId);
+                
+                if (error) throw error;
+                
+                showSuccess('Backup excluído com sucesso!');
+                loadBackups();
+                
+            } catch (error) {
+                console.error('Erro ao excluir backup:', error);
+                showError('Erro ao excluir backup: ' + error.message);
             }
-        };
+        }
         
-        // Inicialização da aplicação
+        // =============================================
+        // INICIALIZAÇÃO DA PÁGINA
+        // =============================================
+        
+        // Carrega todos os dados quando a página é aberta
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Aplicação inicializada');
+            console.log('Página carregada. Inicializando dados...');
             
-            // Carrega dados iniciais do dashboard
-            loadDashboardData();
-            
-            // Atualiza informações de conexão
-            if (window.supabaseInitialized) {
-                document.getElementById('connectionInfo').textContent = 
-                    `Conectado a: lebfczoywiqkczppwuwg.supabase.co | Status: OK`;
-            }
+            // Aguarda um breve momento para garantir que o Supabase esteja carregado
+            setTimeout(() => {
+                loadUserData();
+                loadFinanceData();
+                loadBackups();
+            }, 1000);
         });
         
-        // Tratamento de erros globais
+        // Tratamento do erro do adsbygoogle (se aplicável)
         window.addEventListener('error', function(e) {
             if (e.message && e.message.includes('adsbygoogle')) {
-                console.log('Anúncio bloqueado - pode ser ignorado durante o desenvolvimento');
+                console.log('Anúncio bloqueado - pode ser ignorado');
                 e.preventDefault();
             }
         });
