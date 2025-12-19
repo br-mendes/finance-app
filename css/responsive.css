@@ -1,0 +1,245 @@
+/* Responsividade */
+@media (max-width: 1200px) {
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 992px) {
+    .main-nav {
+        position: fixed;
+        top: 80px;
+        left: 0;
+        width: 100%;
+        background-color: var(--surface-color);
+        flex-direction: column;
+        padding: 20px;
+        box-shadow: var(--shadow-lg);
+        display: none;
+        z-index: 999;
+    }
+    
+    .main-nav.show {
+        display: flex;
+    }
+    
+    .menu-toggle {
+        display: block;
+    }
+    
+    .header-container {
+        padding: 10px 0;
+    }
+    
+    .user-info {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 10px;
+    }
+    
+    .page-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .quick-actions {
+        flex-direction: column;
+    }
+    
+    .quick-actions .btn {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .settings-tabs {
+        flex-wrap: wrap;
+    }
+    
+    .tab-btn {
+        flex: 1;
+        min-width: 150px;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .header-container {
+        padding: 10px;
+    }
+    
+    .app-name {
+        display: none;
+    }
+    
+    .main-logo {
+        height: 35px;
+    }
+    
+    .page-header h1 {
+        font-size: 24px;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .chart-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .chart-select {
+        width: 100%;
+    }
+    
+    .btn {
+        padding: 8px 15px;
+        font-size: 14px;
+    }
+    
+    table {
+        font-size: 14px;
+    }
+    
+    th, td {
+        padding: 10px 5px;
+    }
+    
+    .categories-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .goals-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .templates-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .themes-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .color-pickers {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 400px) {
+    .user-profile {
+        padding: 5px;
+    }
+    
+    .user-avatar {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .premium-badge {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
+    
+    .btn-login span {
+        display: none;
+    }
+    
+    .btn-login i {
+        margin-right: 0;
+    }
+}
+
+/* Orientation-specific styles */
+@media (orientation: portrait) {
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+    .main-header {
+        padding: 5px 20px;
+    }
+    
+    .header-container {
+        padding: 5px 0;
+    }
+    
+    .main-content {
+        margin-top: 70px;
+    }
+}
+
+/* High DPI screens */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .main-logo,
+    .loading-logo,
+    .logout-logo,
+    .modal-logo {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* Print styles */
+@media print {
+    .main-header,
+    .menu-toggle,
+    .user-area,
+    .page-actions,
+    .quick-actions,
+    .modal,
+    .notifications-container {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin-top: 0;
+        padding: 0;
+    }
+    
+    .page {
+        display: block !important;
+        break-inside: avoid;
+    }
+    
+    .summary-card,
+    .chart-container,
+    .table-responsive {
+        break-inside: avoid;
+    }
+    
+    body {
+        background-color: white;
+        color: black;
+    }
+}
